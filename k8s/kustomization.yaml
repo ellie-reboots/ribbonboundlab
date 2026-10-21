@@ -6,4 +6,4 @@ resources:
   - ingress.yaml
 images:
   - name: ghcr.io/ellie-reboots/ribbonboundlab
-    newTag: 275f7ffc6a4ee326c92f792bda01b4b76f5fa0e1
+    newTag: 9c3b59a424cbc01d03da43ff14ef92fcb99162a9

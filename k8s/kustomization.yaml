@@ -6,4 +6,4 @@ resources:
   - cloudflared.yaml
 images:
   - name: ghcr.io/ellie-reboots/ribbonboundlab
-    newTag: latest
+    newTag: 275f7ffc6a4ee326c92f792bda01b4b76f5fa0e1

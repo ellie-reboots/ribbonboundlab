@@ -22,13 +22,13 @@ git push ──► GitHub Actions ──► ghcr.io image ──► commit new t
 | `Dockerfile` | Packs `site/` into a non-root nginx image |
 | `k8s/` | App manifests: namespace, web Deployment + Service, Traefik Ingress |
 | `.github/workflows/build.yml` | Builds and pushes the image, then pins its tag in `k8s/` |
-| `flux/ribbonboundlab.yaml` | Points Flux at `k8s/`. **Move into kintsugi-lab** (`clusters/homelab/apps/`), then delete it here |
+| *(in kintsugi-lab)* `apps/ribbonboundlab/ribbonboundlab.yaml` | Points Flux at this repo's `k8s/` so pushes deploy themselves |
 
 ## One-time setup
 
 ### 0. GitHub username
 `ellie-reboots` is set in `k8s/web.yaml`, `k8s/kustomization.yaml` and
-`flux/ribbonboundlab.yaml`. If the account ever changes, update it there (lowercase).
+kintsugi-lab's `apps/ribbonboundlab/ribbonboundlab.yaml`. If the account ever changes, update it there (lowercase).
 
 ### 1. Image visibility
 After the first workflow run: your profile → **Packages** → `ribbonboundlab` →
@@ -40,21 +40,14 @@ it without a password. (The image only contains your public website.)
 
 ### 2. kintsugi-lab provides
 - **Flux**, bootstrapped on the cluster
-- **Traefik** (k3s ships it in `kube-system`)
+- **Traefik** (Helm release in the `traefik` namespace, default IngressClass)
 - **One shared Cloudflare Tunnel** whose public hostnames
   `ribbonboundlab.com` and `www.ribbonboundlab.com` point at
-  `HTTP` → `traefik.kube-system.svc.cluster.local:80`
+  `HTTP` → `traefik.traefik.svc.cluster.local:80`
 
 ### 3. Turn it on
-Copy `flux/ribbonboundlab.yaml` into kintsugi-lab under the path Flux watches
-(e.g. `clusters/homelab/apps/`), commit and push. Or to try it right away:
-
-```bash
-kubectl apply -f flux/ribbonboundlab.yaml
-flux get kustomizations
-```
-
-Flux syncs `k8s/`, the pods start, Traefik routes the hostnames to them,
+kintsugi-lab's `apps/ribbonboundlab/ribbonboundlab.yaml` registers this repo.
+Once that is pushed, Flux syncs `k8s/`, the pods start, Traefik routes the hostnames to them,
 and https://ribbonboundlab.com is live.
 
 ## Day to day

@@ -1,0 +1,16 @@
+# Never commit cluster access or secrets
+kubeconfig
+*.kubeconfig
+k3s.yaml
+*secret*.yaml
+.env
+.env.*
+*.pem
+*.key
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

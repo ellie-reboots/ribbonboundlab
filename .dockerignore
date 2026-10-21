@@ -1,0 +1,3 @@
+# Only site/ goes into the image
+*
+!site/

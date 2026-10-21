@@ -3,7 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - web.yaml
-  - cloudflared.yaml
+  - ingress.yaml
 images:
   - name: ghcr.io/ellie-reboots/ribbonboundlab
     newTag: 275f7ffc6a4ee326c92f792bda01b4b76f5fa0e1

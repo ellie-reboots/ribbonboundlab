@@ -1,5 +1,5 @@
 # On every push to main: build the site image, push it to GitHub Container
-# Registry, then pin the new tag in k8s/kustomization.yaml. Argo CD sees that
+# Registry, then pin the new tag in k8s/kustomization.yaml. Flux sees that
 # commit and rolls it out to the cluster.
 name: build-and-deploy
 
@@ -8,7 +8,7 @@ on:
     branches: [main]
     paths-ignore:
       - "k8s/**"      # the tag-bump commit below must not retrigger this
-      - "argocd/**"
+      - "flux/**"
       - "README.md"
   workflow_dispatch:
 
@@ -43,7 +43,7 @@ jobs:
             ${{ env.IMAGE }}:${{ github.sha }}
             ${{ env.IMAGE }}:latest
 
-      - name: Pin new tag for Argo CD
+      - name: Pin new tag for Flux
         run: |
           sed -i "s|newTag: .*|newTag: ${GITHUB_SHA}|" k8s/kustomization.yaml
           git config user.name "github-actions[bot]"

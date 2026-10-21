@@ -1,0 +1,28 @@
+# Tells Flux to keep the cluster in sync with k8s/ in this repo.
+# Copy this into kintsugi-lab (e.g. clusters/<name>/apps/ribbonboundlab.yaml)
+# so the cluster's Flux picks it up.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: ribbonboundlab
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/ellie-reboots/ribbonboundlab
+  ref:
+    branch: main
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: ribbonboundlab
+  namespace: flux-system
+spec:
+  interval: 10m
+  sourceRef:
+    kind: GitRepository
+    name: ribbonboundlab
+  path: ./k8s
+  prune: true
+  wait: true
+  timeout: 3m

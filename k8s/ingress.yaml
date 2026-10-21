@@ -1,0 +1,30 @@
+# Routes ribbonboundlab.com to the site through the lab's Traefik.
+# The shared Cloudflare Tunnel in kintsugi-lab sends traffic to Traefik.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web
+  namespace: ribbonboundlab
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: ribbonboundlab.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 80
+    - host: www.ribbonboundlab.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 80

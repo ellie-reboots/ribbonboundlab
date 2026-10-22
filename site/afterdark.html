@@ -543,6 +543,28 @@
     lessons.classList.add("tabbed");
     pick(0);
 
+    // Kink cards: show only the title until tapped (without JavaScript they stay open).
+    document.querySelectorAll(".kinks .card").forEach((card, i) => {
+      const h3 = card.querySelector("h3");
+      const body = document.createElement("div");
+      body.className = "card-body";
+      body.id = "kink-" + i;
+      while (h3.nextSibling) body.append(h3.nextSibling);
+      card.append(body);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "card-toggle";
+      btn.setAttribute("aria-expanded", "false");
+      btn.setAttribute("aria-controls", body.id);
+      btn.innerHTML = h3.innerHTML;
+      h3.replaceChildren(btn);
+      card.classList.add("collapsed");
+      btn.addEventListener("click", () => {
+        const open = card.classList.toggle("collapsed") === false;
+        btn.setAttribute("aria-expanded", open);
+      });
+    });
+
   </script>
 </body>
 </html>

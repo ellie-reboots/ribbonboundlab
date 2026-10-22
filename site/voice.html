@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Voice Pitch Trainer</title>
+<title>Voice Trainer · Ribbon Bound Lab</title>
+<meta name="description" content="A free, private voice training tool: live pitch, resonance, reading practice and progress reports. Audio never leaves your device.">
+<link rel="icon" href="logo.webp" type="image/webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
 <style>
@@ -253,10 +255,51 @@ body { padding-block: 12px; }
   .t-side { max-height: none; }
   .trace-wrap { flex: 1; height: auto; min-height: 120px; }
 }
+/* ---------- Site rail: logo and tabs back to the rest of Ribbon Bound Lab ---------- */
+.rail {
+  position: fixed; z-index: 15; top: 0; bottom: 0; left: 0; width: 92px;
+  padding: max(12px, env(safe-area-inset-top, 0px)) 8px 12px max(8px, env(safe-area-inset-left, 0px));
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: var(--surface); border-right: 1px solid var(--line);
+}
+.rail-logo { display: block; width: 56px; height: 56px; margin-bottom: 8px; border-radius: 14px; }
+.rail-logo img { display: block; width: 100%; height: 100%; border-radius: 14px; }
+.rail-logo:hover img, .rail-logo:focus-visible img { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rail-tab {
+  width: 100%; display: grid; justify-items: center; gap: 2px; padding: 8px 4px; border-radius: 12px;
+  color: var(--muted); text-decoration: none; font: 500 .72rem/1.2 var(--font-body); text-align: center;
+}
+.rail-ico { font-size: 1.25rem; line-height: 1; }
+.rail-tab:hover { background: var(--bg); color: var(--fg); }
+.rail-tab[aria-current="page"] { background: var(--fem-bg); color: var(--accent); }
+.rail-tab:focus-visible, .rail-note:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rail-note { margin-top: auto; font-size: .66rem; color: var(--muted); text-align: center; }
+.rail-note:hover { color: var(--accent); }
+body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
+@media (max-width: 759px) {
+  .rail {
+    position: sticky; top: 0; bottom: auto; width: auto; flex-direction: row; gap: 4px;
+    margin: -12px calc(-1 * max(16px, env(safe-area-inset-right, 0px))) 12px calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+    padding: max(8px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px));
+    border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto;
+  }
+  .rail-logo { width: 40px; height: 40px; margin: 0 4px 0 0; flex: none; }
+  .rail-tab { width: auto; flex: none; padding: 6px 8px; }
+  .rail-note { display: none; }
+  body { padding-left: max(16px, env(safe-area-inset-left, 0px)); }
+}
 @media (prefers-reduced-motion: reduce) { .marker, .meter span { transition: none; } .rec-status.on::before { animation: none; } }
 </style>
 </head>
 <body>
+<nav class="rail" aria-label="Ribbon Bound Lab">
+  <a class="rail-logo" href="/"><img src="logo.webp" alt="Ribbon Bound Lab home" width="56" height="56"></a>
+  <a class="rail-tab" href="/"><span class="rail-ico" aria-hidden="true">🏠</span>Home</a>
+  <a class="rail-tab" href="trans.html"><span class="rail-ico" aria-hidden="true">🏳️‍⚧️</span>Trans guide</a>
+  <a class="rail-tab" href="voice.html" aria-current="page"><span class="rail-ico" aria-hidden="true">🎙️</span>Voice</a>
+  <a class="rail-tab" href="about.html"><span class="rail-ico" aria-hidden="true">💗</span>About me</a>
+  <a class="rail-note" href="notice.html">Site notice</a>
+</nav>
 <div class="app">
   <header class="topbar">
     <div>

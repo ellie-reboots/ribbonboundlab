@@ -18,6 +18,13 @@ h1 span { color: var(--accent); }
 }
 
 .secret { cursor: default; }
+.signin {
+  position: absolute; top: 16px; right: 16px; z-index: 10;
+  padding: .4em 1em; border-radius: 999px; font-size: .9rem; text-decoration: none;
+  color: var(--fg); border: 2px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+}
+.signin:hover { background: var(--accent); border-color: var(--accent); color: var(--bg); }
 .site-footer {
   max-width: 36rem; margin: 3rem auto 0; text-align: center;
   font-size: .75rem; color: var(--muted); line-height: 1.5;

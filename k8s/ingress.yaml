@@ -1,5 +1,6 @@
 # Routes ribbonboundlab.com to the site through the lab's Traefik.
 # The shared Cloudflare Tunnel in kintsugi-lab sends traffic to Traefik.
+# /api/stats goes to the read-only stats service; everything else to nginx.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -11,6 +12,13 @@ spec:
     - host: ribbonboundlab.com
       http:
         paths:
+          - path: /api/stats
+            pathType: Exact
+            backend:
+              service:
+                name: stats
+                port:
+                  number: 80
           - path: /
             pathType: Prefix
             backend:
@@ -21,6 +29,13 @@ spec:
     - host: www.ribbonboundlab.com
       http:
         paths:
+          - path: /api/stats
+            pathType: Exact
+            backend:
+              service:
+                name: stats
+                port:
+                  number: 80
           - path: /
             pathType: Prefix
             backend:

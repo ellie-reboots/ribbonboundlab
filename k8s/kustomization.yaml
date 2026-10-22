@@ -4,6 +4,12 @@ resources:
   - namespace.yaml
   - web.yaml
   - ingress.yaml
+  - stats.yaml
+configMapGenerator:
+  - name: stats-app
+    namespace: ribbonboundlab
+    files:
+      - stats.py
 images:
   - name: ghcr.io/ellie-reboots/ribbonboundlab
     newTag: 9c3b59a424cbc01d03da43ff14ef92fcb99162a9

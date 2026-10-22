@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab · Ribbon Bound Lab</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="logo.webp" type="image/webp">
+</head>
+<body class="section">
+  <a class="corner-logo" href="/"><img src="logo.webp" alt="Ribbon Bound Lab home" width="64" height="64"></a>
+  <main class="lab">
+    <h1>The <span>Lab</span></h1>
+    <p>Nothing I own is brand new. I love reviving old tech and giving retired
+      machines a second life. My cluster is called <strong>kintsugi-lab</strong>, after the
+      art of repairing broken pottery with gold. 💛</p>
+
+    <div class="tabs" role="tablist" aria-label="Lab sections">
+      <a role="tab" href="#hardware" id="tab-hardware" aria-controls="hardware">Hardware</a>
+      <a role="tab" href="#running" id="tab-running" aria-controls="running">What's running</a>
+      <a role="tab" href="#live" id="tab-live" aria-controls="live">Live data</a>
+    </div>
+
+    <section class="panel" id="hardware" role="tabpanel" aria-labelledby="tab-hardware">
+      <p>Four systems, all running <strong>Ubuntu Server 24.04 LTS</strong> and working
+        together as one Kubernetes cluster.</p>
+      <div class="cards">
+        <article class="card">
+          <h2>HP ProDesk 600 G4</h2>
+          <p class="role">💗 The heart of the cluster</p>
+          <ul>
+            <li>Intel Core i5-8500T</li>
+            <li>8 GB RAM</li>
+            <li>A puny 256 GB SSD</li>
+          </ul>
+          <p class="note">Tiny, quiet and runs the Kubernetes control plane.</p>
+        </article>
+
+        <article class="card">
+          <h2>Intel NUC 10</h2>
+          <p class="role">⚡ The speedy little one</p>
+          <ul>
+            <li>Intel Core i7-10710U</li>
+            <li>32 GB RAM</li>
+            <li>512 GB SSD</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <h2>Supermicro X10</h2>
+          <p class="role">💪 The big one</p>
+          <ul>
+            <li>2× Intel Xeon E5-2620 v4</li>
+            <li>80 GB RAM (I know, odd number)</li>
+            <li>1 TB SSD</li>
+            <li>NVIDIA Titan Xp</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <h2>Supermicro X11</h2>
+          <p class="role">🗄️ The vault</p>
+          <ul>
+            <li>Intel Xeon E3-1230 v5</li>
+            <li>32 GB RAM</li>
+            <li>512 GB SSD</li>
+            <li>NVIDIA GeForce GTX 1660 Ti</li>
+            <li>30 TB of hard drives for cluster storage</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel" id="running" role="tabpanel" aria-labelledby="tab-running">
+      <p>Everything is deployed with GitOps: I push to Git and the cluster updates itself.</p>
+      <div class="cards">
+        <article class="card">
+          <h2>Apps</h2>
+          <ul>
+            <li><strong>Plex</strong>: movies and TV</li>
+            <li><strong>Seerr</strong>: media requests</li>
+            <li><strong>Forgejo</strong>: self-hosted Git</li>
+            <li><strong>AdGuard Home</strong>: DNS and ad blocking</li>
+            <li><strong>Homepage</strong>: my lab dashboard</li>
+            <li><strong>This website</strong> 🎀</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <h2>Monitoring</h2>
+          <ul>
+            <li><strong>Prometheus</strong>: collects metrics</li>
+            <li><strong>Grafana</strong>: pretty dashboards</li>
+            <li><strong>Alertmanager</strong>: tells me when things break</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <h2>Platform</h2>
+          <ul>
+            <li><strong>Kubernetes</strong> on Ubuntu Server 24.04</li>
+            <li><strong>Flux CD</strong>: GitOps deployments</li>
+            <li><strong>Traefik</strong>: ingress and routing</li>
+            <li><strong>MetalLB</strong>: LAN load balancer IPs</li>
+            <li><strong>Cloudflare Tunnel</strong>: public access, no open ports</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <h2>Storage</h2>
+          <ul>
+            <li><strong>local-path</strong>: fast SSD storage for app configs</li>
+            <li><strong>NFS</strong>: shared storage from the vault's 30 TB</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel" id="live" role="tabpanel" aria-labelledby="tab-live">
+      <p>Straight from the cluster, refreshed every 30 seconds. ✨</p>
+      <div class="stats">
+        <div class="stat"><span class="label">Nodes online</span><span class="value" id="stat-nodes">–</span></div>
+        <div class="stat"><span class="label">Pods running</span><span class="value" id="stat-pods">–</span></div>
+        <div class="stat"><span class="label">CPU in use</span><span class="value" id="stat-cpu">–</span></div>
+        <div class="stat"><span class="label">Memory in use</span><span class="value" id="stat-mem">–</span></div>
+      </div>
+      <p class="stats-status" id="stats-status">Loading…</p>
+    </section>
+
+    <nav>
+      <a href="/">← Home</a>
+    </nav>
+  </main>
+
+  <script>
+    // Show one panel at a time; the URL hash (#hardware, #running, #live) picks it.
+    // Without JavaScript every panel stays visible.
+    document.documentElement.classList.add("js");
+    const tabs = document.querySelectorAll('[role="tab"]');
+    function show() {
+      const id = ["hardware", "running", "live"].includes(location.hash.slice(1))
+        ? location.hash.slice(1) : "hardware";
+      tabs.forEach(t => t.setAttribute("aria-selected", t.getAttribute("aria-controls") === id));
+      document.querySelectorAll(".panel").forEach(p => p.hidden = p.id !== id);
+    }
+    tabs.forEach(t => t.addEventListener("click", e => {
+      e.preventDefault();
+      history.replaceState(null, "", t.getAttribute("href"));
+      show();
+    }));
+    window.addEventListener("hashchange", show);
+    show();
+
+    // Live data: poll the read-only stats endpoint while the page is open.
+    const fmt = (v, suffix = "") => (v === null || v === undefined) ? "–" : v + suffix;
+    async function loadStats() {
+      const status = document.getElementById("stats-status");
+      try {
+        const res = await fetch("/api/stats", { cache: "no-store" });
+        if (!res.ok) throw new Error(res.status);
+        const s = await res.json();
+        document.getElementById("stat-nodes").textContent =
+          s.nodes_ready == null ? "–" : `${s.nodes_ready} / ${fmt(s.nodes_total)}`;
+        document.getElementById("stat-pods").textContent = fmt(s.pods_running);
+        document.getElementById("stat-cpu").textContent = fmt(s.cpu_percent, "%");
+        document.getElementById("stat-mem").textContent = fmt(s.memory_percent, "%");
+        status.textContent = "Updated " + new Date(s.updated * 1000).toLocaleTimeString();
+      } catch {
+        status.textContent = "Live stats are taking a nap right now. 💤";
+      }
+    }
+    loadStats();
+    setInterval(loadStats, 30000);
+  </script>
+</body>
+</html>

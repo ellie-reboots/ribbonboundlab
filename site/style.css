@@ -144,6 +144,15 @@ figure.veiled figcaption { visibility: hidden; }
   .primer dd { margin-bottom: .5rem; }
 }
 .cards.kinks { align-items: start; }
+.badge {
+  display: inline-block; margin-left: .35rem; padding: .1em .55em; border-radius: 999px;
+  font-size: .7rem; font-weight: 600; vertical-align: middle; white-space: nowrap;
+}
+.badge.love { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--fg); }
+.badge.curious { background: color-mix(in srgb, #8b7cf6 25%, transparent); color: var(--fg); }
+.legend { font-size: .85rem; margin: 0 0 1rem; }
+.legend .badge { margin-left: 0; }
+.card-toggle .badge { margin-left: auto; }
 .card-toggle {
   all: unset; box-sizing: border-box; width: 100%; cursor: pointer;
   display: flex; justify-content: space-between; align-items: center; gap: .5rem;

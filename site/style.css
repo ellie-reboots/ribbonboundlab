@@ -31,12 +31,18 @@ main.lab { max-width: 52rem; }
 .lab > p { max-width: 36rem; margin-left: auto; margin-right: auto; }
 .lab strong { color: var(--fg); }
 .tabs { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; margin: 2rem 0 1.5rem; }
-.tabs a {
+.tabs a, .tabs button {
   color: var(--fg); text-decoration: none; padding: .45em 1.1em; border-radius: 999px;
   border: 2px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  background: none; font: inherit; cursor: pointer;
 }
-.tabs a:hover { border-color: var(--accent); }
-.tabs a[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.tabs a:hover, .tabs button:hover { border-color: var(--accent); }
+.tabs [aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.lesson-tabs { justify-content: flex-start; margin: 1rem 0; }
+.lesson-tabs button { font-size: .85rem; padding: .35em .9em; }
+.lessons.tabbed summary { display: none; }
+.lessons.tabbed details { border-color: var(--accent); }
+.lessons.tabbed details > :first-of-type { margin-top: 0; }
 .panel > p { max-width: 36rem; margin: 0 auto 1.5rem; }
 .cards {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
@@ -69,6 +75,40 @@ nav a:hover { background: var(--accent); color: var(--bg); }
 /* About page */
 .about { text-align: left; }
 .about p { margin: 0 0 .75rem; }
+.about h2 { margin: 1.75rem 0 .5rem; font-size: 1.2rem; color: var(--accent); }
+.about strong { color: var(--fg); }
+.goals { margin: 0 0 .75rem; padding-left: 1.2rem; color: var(--muted); line-height: 1.6; }
+.goals li { margin-bottom: .4rem; }
+
+/* After Dark (18+) page */
+.gate { max-width: 28rem; }
+[hidden] { display: none !important; }
+.disclaimer {
+  margin: 1rem 0 0; padding: 1rem 1.25rem; border-radius: 20px;
+  border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.disclaimer strong { display: block; margin-bottom: .5rem; color: var(--accent); }
+.disclaimer ul { margin: 0; padding-left: 1.1rem; color: var(--muted); line-height: 1.6; font-size: .95rem; }
+.tags.limits li { background: color-mix(in srgb, #e5484d 20%, transparent); }
+.fineprint { font-size: .85rem; font-style: italic; }
+.lessons { display: flex; flex-direction: column; gap: .75rem; margin-top: 1rem; }
+.lessons details {
+  border-radius: 16px; padding: .85rem 1.1rem;
+  border: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.lessons details[open] { border-color: var(--accent); }
+.lessons summary { cursor: pointer; font-weight: 600; color: var(--fg); }
+.lessons details p, .lessons details ul { margin: .75rem 0 0; color: var(--muted); line-height: 1.6; font-size: .95rem; }
+.lessons details ul { padding-left: 1.1rem; }
+.lessons strong, .lessons em { color: var(--fg); }
+.lessons ul.acronym { list-style: none; padding-left: 0; display: flex; flex-direction: column; gap: .5rem; }
+.acronym li { display: flex; align-items: flex-start; gap: .75rem; }
+.acronym .letter {
+  flex: none; width: 2rem; height: 2rem; border-radius: 10px;
+  display: grid; place-items: center; font-weight: 700; font-size: 1.1rem;
+  background: var(--accent); color: var(--bg);
+}
+.acronym li div { padding-top: .2rem; }
 .tags { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 0; padding: 0; list-style: none; }
 .tags li {
   font-size: .85rem; padding: .25em .75em; border-radius: 999px;

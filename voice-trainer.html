@@ -1,0 +1,1708 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice Pitch Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+/* Layout: one working screen — live readout + zone gauge on top, voice care, scrolling pitch trace, stats, practice recording, progress report, settings */
+:root {
+  --bg: #f6f4f7;
+  --surface: #ffffff;
+  --fg: #1f1a24;
+  --muted: #6c6475;
+  --line: #e3dde8;
+  --accent: #c2417a;
+  --masc: #3f7fb8;
+  --andro: #8a62b8;
+  --fem: #d24f86;
+  --masc-bg: rgba(63,127,184,.10);
+  --andro-bg: rgba(138,98,184,.12);
+  --fem-bg: rgba(210,79,134,.10);
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141118; --surface: #1d1922; --fg: #efe9f3; --muted: #a39aad; --line: #2f2937;
+    --accent: #f07aaa; --masc: #6aa8e0; --andro: #b08fe0; --fem: #f07aaa;
+    --masc-bg: rgba(106,168,224,.13); --andro-bg: rgba(176,143,224,.14); --fem-bg: rgba(240,122,170,.13);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141118; --surface: #1d1922; --fg: #efe9f3; --muted: #a39aad; --line: #2f2937;
+  --accent: #f07aaa; --masc: #6aa8e0; --andro: #b08fe0; --fem: #f07aaa;
+  --masc-bg: rgba(106,168,224,.13); --andro-bg: rgba(176,143,224,.14); --fem-bg: rgba(240,122,170,.13);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 15px/1.5 var(--font-body);
+  padding-block: 24px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 20px; }
+header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+h1 { font: 700 1.6rem/1.1 var(--font-display); margin: 0; text-wrap: balance; }
+h2 { font: 600 .75rem/1 var(--font-body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 12px; }
+.sub { color: var(--muted); margin: 4px 0 0; }
+button {
+  font: 500 .95rem var(--font-body); border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--fg); padding: 10px 18px; cursor: pointer;
+}
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+
+.live { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 20px; }
+@media (max-width: 720px) { .live { grid-template-columns: 1fr; } }
+.readout { display: grid; gap: 6px; align-content: start; container-type: inline-size; }
+.hz { font: 700 clamp(3.4rem, 10vw, 5.5rem)/1 var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.hz small { font-size: .35em; font-weight: 500; color: var(--muted); margin-left: 6px; }
+.big-row { display: flex; align-items: baseline; gap: 6cqi; }
+.big-row .hz { font-size: clamp(2.2rem, 18cqi, 5.5rem); white-space: nowrap; }
+.note-big { color: var(--accent); }
+.note-big span { display: inline-block; min-width: 2.6ch; }
+.note { font: 500 1rem var(--font-mono); color: var(--muted); }
+.zone-pill {
+  justify-self: start; margin-top: 6px; padding: 6px 14px; border-radius: 999px;
+  font: 600 .95rem var(--font-body); border: 1px solid currentColor;
+}
+.zone-pill.masc { color: var(--masc); background: var(--masc-bg); }
+.zone-pill.andro { color: var(--andro); background: var(--andro-bg); }
+.zone-pill.fem { color: var(--fem); background: var(--fem-bg); }
+.zone-pill.none { color: var(--muted); }
+
+.gauge { display: grid; gap: 14px; }
+.bar { position: relative; height: 46px; border-radius: 10px; overflow: hidden; display: flex; border: 1px solid var(--line); }
+.bar > div { height: 100%; display: flex; align-items: center; justify-content: center; font: 500 .78rem var(--font-body); }
+.bar .m { background: var(--masc-bg); color: var(--masc); }
+.bar .a { background: var(--andro-bg); color: var(--andro); }
+.bar .f { background: var(--fem-bg); color: var(--fem); }
+.marker { position: absolute; top: -2px; bottom: -2px; width: 4px; margin-left: -2px; background: var(--fg); border-radius: 2px; transition: left .08s linear; }
+.marker[hidden] { display: none; }
+.ticks { display: flex; justify-content: space-between; font: .75rem var(--font-mono); color: var(--muted); margin-top: -8px; }
+.bright-row { display: grid; gap: 6px; }
+.bright-row .label { display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); }
+.bright-row .label b { color: var(--fg); font: 500 .85rem var(--font-mono); }
+.meter { height: 10px; border-radius: 999px; background: linear-gradient(90deg, var(--masc-bg), var(--andro-bg), var(--fem-bg)); border: 1px solid var(--line); position: relative; }
+.meter span { position: absolute; top: -4px; width: 4px; height: 16px; margin-left: -2px; background: var(--fg); border-radius: 2px; transition: left .12s linear; }
+.level { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.level i { display: block; height: 100%; width: 0; background: var(--muted); }
+
+.trace-wrap { position: relative; }
+canvas { display: block; width: 100%; height: 260px; max-width: 100%; }
+
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 620px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat { display: grid; gap: 2px; }
+.stat .k { font-size: .8rem; color: var(--muted); }
+.stat .v { font: 600 1.5rem var(--font-display); font-variant-numeric: tabular-nums; }
+.split { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--line); margin-top: 14px; }
+.split i { display: block; height: 100%; }
+.split .m { background: var(--masc); } .split .a { background: var(--andro); } .split .f { background: var(--fem); }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; font-size: .82rem; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; background: var(--c); }
+
+.settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+label { display: grid; gap: 4px; font-size: .85rem; color: var(--muted); }
+input, select { font: 500 1rem var(--font-mono); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); width: 100%; }
+h3 { font: 600 1.05rem/1.3 var(--font-display); margin: 0 0 6px; }
+.small { font-size: .82rem; margin: 0 0 8px; }
+.sec-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.sec-head h2 { margin: 0; }
+.row-btns { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.practice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 14px; }
+.practice-grid .wide { grid-column: 1 / -1; }
+textarea { font: 400 .95rem/1.45 var(--font-body); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); width: 100%; resize: vertical; }
+.rec-status { font: 500 .85rem var(--font-mono); color: var(--muted); }
+.rec-status.on { color: var(--fem); }
+.rec-status.on::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--fem); margin-right: 7px; animation: pulse 1.2s infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+button.danger { background: var(--fem); border-color: var(--fem); color: #fff; }
+.empty { color: var(--muted); padding: 18px; border: 1px dashed var(--line); border-radius: 10px; }
+.report-body { display: grid; gap: 22px; }
+#progress { height: 220px; }
+.coach { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.coach li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; align-items: baseline; padding: 12px 14px; border-radius: 10px; background: var(--bg); }
+.coach .tag { font: 600 .7rem var(--font-body); text-transform: uppercase; letter-spacing: .07em; padding: 3px 8px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.coach .tag.good { color: var(--masc); } .coach .tag.focus { color: var(--andro); } .coach .tag.care { color: var(--fem); }
+.coach b { display: block; }
+.coach p { margin: 2px 0 0; color: var(--muted); grid-column: 2; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 500; color: var(--muted); font-size: .78rem; white-space: nowrap; }
+td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.notes { min-width: 200px; max-width: 360px; }
+.badge { font-size: .7rem; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin-left: 4px; white-space: nowrap; }
+td button { padding: 4px 10px; font-size: .8rem; }
+.water { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-radius: 14px; border: 1px solid var(--masc); background: var(--masc-bg); }
+.care-pill { font: 600 .85rem var(--font-body); padding: 5px 12px; border-radius: 999px; border: 1px solid currentColor; }
+.care-pill.ok { color: var(--masc); background: var(--masc-bg); }
+.care-pill.watch { color: var(--andro); background: var(--andro-bg); }
+.care-pill.rest { color: var(--fem); background: var(--fem-bg); }
+.care-msg { margin: 0 0 14px; max-width: 75ch; }
+.care-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 720px) { .care-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.care-item { display: grid; gap: 2px; }
+.care-item .k { font-size: .8rem; color: var(--muted); }
+.care-item .v { font: 600 1.3rem var(--font-display); font-variant-numeric: tabular-nums; }
+.care-item .hint { font-size: .75rem; color: var(--muted); }
+.reader {
+  position: fixed; top: auto; left: auto; margin: 0;
+  right: max(16px, env(safe-area-inset-right, 0px)); bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  width: min(460px, calc(100vw - 32px)); max-height: min(82vh, 760px); overflow: auto;
+  padding: 16px; border-radius: 14px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--fg); box-shadow: 0 14px 44px rgba(20, 10, 30, .28); z-index: 20;
+}
+.reader[open] { display: grid; gap: 12px; }
+.reader-head { display: flex; align-items: center; justify-content: space-between; }
+.reader-head h2 { margin: 0; }
+.icon-btn { padding: 2px 12px; font-size: 1.3rem; line-height: 1.2; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); }
+.seg-btn { border: 0; background: transparent; padding: 8px 10px; font-size: .88rem; }
+.seg-btn[aria-pressed="true"] { background: var(--fem); color: #fff; }
+#modeMasc[aria-pressed="true"] { background: var(--masc); }
+.reader-row { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 10px; }
+#scriptFocus { margin: -4px 0 0; }
+.reader-live { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.r-hz { font: 700 1.7rem/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.r-cue { font-weight: 600; color: var(--muted); }
+.r-cue.good { color: var(--masc); } .reader.fem-mode .r-cue.good { color: var(--fem); }
+.r-cue.near { color: var(--andro); }
+.r-cue.off { color: var(--fg); }
+.script { font: 400 1.12rem/1.85 var(--font-body); padding: 12px 14px; border-radius: 10px; background: var(--bg); max-height: 230px; overflow: auto; }
+.script .w { border-radius: 4px; padding: 1px 1px; cursor: pointer; }
+.script .w:hover { background: var(--line); }
+.script .w.cur { background: var(--andro-bg); box-shadow: 0 0 0 2px var(--accent); }
+.script .w.z-masc { color: var(--masc); } .script .w.z-andro { color: var(--andro); } .script .w.z-fem { color: var(--fem); }
+.script .w.unheard { color: var(--muted); }
+.pointers { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.pointers li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; align-items: baseline; padding: 10px 12px; border-radius: 10px; background: var(--bg); font-size: .9rem; }
+.pointers .ptag { font: 600 .7rem var(--font-mono); padding: 2px 7px; border-radius: 999px; border: 1px solid currentColor; }
+.pointers .ptag.good { color: var(--masc); } .pointers .ptag.focus { color: var(--andro); } .pointers .ptag.care { color: var(--fem); }
+.pointers li.empty-p { display: block; color: var(--muted); }
+@media (max-width: 520px) { .reader { right: 8px; left: 8px; width: auto; bottom: 8px; max-height: 88vh; } }
+label.check { display: flex; align-items: center; gap: 8px; color: var(--fg); font-size: .9rem; }
+label.check input { width: auto; accent-color: var(--accent); }
+.mini { padding: 10px 12px; display: grid; gap: 8px; }
+.mini-top { display: flex; align-items: baseline; gap: 6px 14px; }
+.mini-top .hz { font-size: 2.6rem; }
+.mini-top small { font-size: .9rem; color: var(--muted); }
+.mini .bar { height: 22px; border-radius: 6px; }
+.mini .bar > div { font-size: .6rem; }
+.mini-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.mini .zone-pill, .mini .care-pill { margin: 0; font-size: .78rem; padding: 3px 10px; }
+.mini-water { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: .85rem; padding: 6px 8px; border-radius: 8px; background: var(--masc-bg); border: 1px solid var(--masc); }
+.mini-water button { padding: 4px 10px; font-size: .8rem; }
+.tips { color: var(--muted); font-size: .9rem; max-width: 70ch; }
+.tips p { margin: 0 0 8px; }
+.err { color: var(--fem); font-weight: 500; }
+@media (prefers-reduced-motion: reduce) { .marker, .meter span { transition: none; } .rec-status.on::before { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Voice Pitch Trainer</h1>
+      <p class="sub">Live pitch, resonance and voice range. Audio and data stay on your computer.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button id="reset">Reset stats</button>
+      <button id="demo">Stop demo</button>
+      <button id="readBtn" title="Read scripts aloud and get pointers as you go">Reading practice</button>
+      <button id="pipBtn" title="Small always-on-top window for use during Discord calls">Mini window</button>
+      <button id="start" class="primary">Start microphone</button>
+    </div>
+  </header>
+  <p id="error" class="err" hidden></p>
+  <p id="demoNote" class="sub">Showing a simulated demo voice. Press Start microphone to use your own.</p>
+
+  <section class="panel live">
+    <div class="readout">
+      <h2>Current pitch</h2>
+      <div class="big-row">
+        <div class="hz"><span id="hz">—</span><small>Hz</small></div>
+        <div class="hz note-big"><span id="noteName">—</span></div>
+      </div>
+      <div class="note" id="note">Press Start and speak or hum</div>
+      <div class="zone-pill none" id="zone">Waiting for voice</div>
+    </div>
+    <div class="gauge">
+      <h2>Where your voice sits</h2>
+      <div class="bar" id="bar">
+        <div class="m" id="segM">Masculine</div>
+        <div class="a" id="segA">Androgynous</div>
+        <div class="f" id="segF">Feminine</div>
+        <div class="marker" id="marker" hidden></div>
+      </div>
+      <div class="ticks" id="ticks"></div>
+      <div class="bright-row">
+        <div class="label">Resonance / brightness (rough estimate) <b id="brightVal">—</b></div>
+        <div class="meter"><span id="brightMarker" style="left:0%"></span></div>
+        <div class="label"><span>Darker / chest</span><span>Brighter / forward</span></div>
+      </div>
+      <div class="level" title="Input level"><i id="level"></i></div>
+    </div>
+  </section>
+
+  <dialog id="reader" class="reader" aria-labelledby="readerTitle">
+    <div class="reader-head">
+      <h2 id="readerTitle">Reading practice</h2>
+      <button id="readerClose" class="icon-btn" aria-label="Close reading window">×</button>
+    </div>
+    <div class="seg" role="group" aria-label="Training direction">
+      <button id="modeFem" class="seg-btn" aria-pressed="true">Feminine training</button>
+      <button id="modeMasc" class="seg-btn" aria-pressed="false">Masculine training</button>
+    </div>
+    <div class="reader-row">
+      <label for="scriptSel">Script<select id="scriptSel"></select></label>
+      <label for="readTarget">Target (Hz)<input id="readTarget" type="number" min="70" max="350" step="1"></label>
+    </div>
+    <p class="sub small" id="scriptFocus"></p>
+    <div class="reader-live">
+      <span class="r-hz"><span id="rLiveHz">—</span> Hz</span>
+      <span class="r-cue" id="rLiveCue">Press Start reading, then read aloud</span>
+    </div>
+    <div class="script" id="scriptText"></div>
+    <p class="sub small">Tap a word to jump there if the highlight gets ahead or falls behind. Words take the color of the range you said them in.</p>
+    <label class="check" for="exactWords"><input id="exactWords" type="checkbox"> Exact word tracking</label>
+    <p class="sub small" id="exactNote">Off: the window follows your speaking rhythm and everything stays on this computer. On: uses your browser's speech recognition, which in Chrome and Edge may send audio to Google or Microsoft to recognize the words.</p>
+    <div class="row-btns">
+      <button id="readStart" class="primary">Start reading</button>
+      <button id="readRestart">Start over</button>
+    </div>
+    <div>
+      <h3>Pointers</h3>
+      <ul id="pointers" class="pointers"><li class="empty-p">Pointers appear here after each sentence.</li></ul>
+    </div>
+  </dialog>
+
+  <div class="water" id="water" hidden>
+    <div><b>Time for a sip of water.</b> <span id="waterWhy">You've been practicing a while.</span></div>
+    <button id="waterDone" class="primary">Done, I drank some</button>
+  </div>
+
+  <section class="panel care">
+    <div class="sec-head">
+      <h2>Voice care</h2>
+      <span class="care-pill ok" id="careLevel">Relaxed</span>
+    </div>
+    <p class="care-msg" id="careMsg">Watching for signs of strain: pitch pushed too high, voice breaks, a rougher or breathier sound, and very loud speech.</p>
+    <div class="care-grid">
+      <div class="care-item"><span class="k">Clarity</span><span class="v" id="cClarity">—</span><span class="hint">Lower can mean dryness or fatigue</span></div>
+      <div class="care-item"><span class="k">Voice breaks (30s)</span><span class="v" id="cCracks">—</span><span class="hint">Sudden jumps or cracks</span></div>
+      <div class="care-item"><span class="k">Time above comfort ceiling</span><span class="v" id="cHigh">—</span><span class="hint">Above <span id="ceilLabel">240</span> Hz</span></div>
+      <div class="care-item"><span class="k">Next water reminder</span><span class="v" id="cWater">—</span><span class="hint">Based on time spent speaking</span></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Pitch over the last <span id="secLabel">15</span> seconds</h2>
+    <div class="trace-wrap"><canvas id="trace"></canvas></div>
+  </section>
+
+  <section class="panel">
+    <h2>This session</h2>
+    <div class="stats">
+      <div class="stat"><span class="k">Average pitch</span><span class="v" id="avg">—</span></div>
+      <div class="stat"><span class="k">Lowest</span><span class="v" id="min">—</span></div>
+      <div class="stat"><span class="k">Highest</span><span class="v" id="max">—</span></div>
+      <div class="stat"><span class="k">Time voiced</span><span class="v" id="time">0s</span></div>
+    </div>
+    <div class="split"><i class="m" id="pM" style="width:0"></i><i class="a" id="pA" style="width:0"></i><i class="f" id="pF" style="width:0"></i></div>
+    <div class="legend">
+      <span style="--c:var(--masc)">Masculine <b id="tM">0%</b></span>
+      <span style="--c:var(--andro)">Androgynous <b id="tA">0%</b></span>
+      <span style="--c:var(--fem)">Feminine <b id="tF">0%</b></span>
+    </div>
+  </section>
+
+  <section class="panel" id="practice">
+    <div class="sec-head">
+      <h2>Practice session</h2>
+      <span class="rec-status" id="recStatus">Not recording</span>
+    </div>
+    <div class="practice-grid">
+      <label for="exercise">What are you practicing?
+        <select id="exercise">
+          <option>Reading aloud</option>
+          <option>Conversation / free speech</option>
+          <option>Sustained vowels</option>
+          <option>Pitch glides (sirens)</option>
+          <option>Humming</option>
+          <option>Phone or video call</option>
+        </select>
+      </label>
+      <label for="strain">How does your throat feel?
+        <select id="strain">
+          <option value="1">1 · Totally relaxed</option>
+          <option value="2" selected>2 · Comfortable</option>
+          <option value="3">3 · A bit of effort</option>
+          <option value="4">4 · Tired or tight</option>
+          <option value="5">5 · Sore or hoarse</option>
+        </select>
+      </label>
+      <label for="sessNotes" class="wide">Notes for this session
+        <textarea id="sessNotes" rows="3" placeholder="e.g. Felt good on 'ee' sounds. Voice dropped when I got excited. Tried the smiling posture."></textarea>
+      </label>
+    </div>
+    <div class="row-btns">
+      <button id="recBtn" class="primary">Start recording session</button>
+      <button id="recCancel" hidden>Discard</button>
+    </div>
+  </section>
+
+  <section class="panel" id="report">
+    <div class="sec-head">
+      <h2>Progress report</h2>
+      <div class="row-btns">
+        <button id="copyReport">Copy report</button>
+        <button id="dlReport" class="primary">Download PDF report</button>
+        <button id="loadExamples">Load example sessions</button>
+      </div>
+    </div>
+    <p class="sub small">Private by design: sessions are saved only in this browser on this computer. Nothing is uploaded. Reports are made on your device and are yours to keep or share.</p>
+    <p id="reportMsg" class="sub" hidden></p>
+    <div id="reportEmpty" class="empty">No sessions saved yet. Record a practice session above, or load example sessions to see what a report looks like.</div>
+    <div id="reportBody" class="report-body" hidden>
+      <div class="stats">
+        <div class="stat"><span class="k">Sessions</span><span class="v" id="rCount">—</span></div>
+        <div class="stat"><span class="k">Total practice</span><span class="v" id="rTotal">—</span></div>
+        <div class="stat"><span class="k">Latest average</span><span class="v" id="rLatest">—</span></div>
+        <div class="stat"><span class="k">Change since first</span><span class="v" id="rChange">—</span></div>
+      </div>
+      <div>
+        <h3>Average pitch per session</h3>
+        <p class="sub small">Dot = average pitch. Bar = your usual range (middle 80% of what you spoke). Dashed line = target.</p>
+        <canvas id="progress"></canvas>
+      </div>
+      <div>
+        <h3>Coaching notes</h3>
+        <ul id="coach" class="coach"></ul>
+      </div>
+      <div>
+        <h3>Session log</h3>
+        <div class="table-wrap">
+          <table id="log">
+            <thead><tr><th>Date</th><th>Practice</th><th>Length</th><th>Average</th><th>Usual range</th><th>Feminine</th><th>Brightness</th><th>Clarity</th><th>Breaks/min</th><th>Water</th><th>Throat</th><th>Notes</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="row-btns">
+        <button id="clearAll">Delete all sessions</button>
+        <span id="clearConfirm" hidden>Delete every saved session? <button id="clearYes" class="danger">Yes, delete all</button> <button id="clearNo">Keep them</button></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="discord">
+    <div class="sec-head">
+      <h2>Discord</h2>
+      <span class="rec-status" id="dcState">Not connected</span>
+    </div>
+    <p class="sub small">Optional. Paste a webhook link from your own private Discord channel (Edit Channel → Integrations → Webhooks → New Webhook → Copy Webhook URL). Only what you tick below is sent, and only to that channel. Audio is never sent. Keep the link private, like a password.</p>
+    <div class="practice-grid">
+      <label for="dcUrl" class="wide">Webhook link<input id="dcUrl" type="password" autocomplete="off" spellcheck="false" placeholder="https://discord.com/api/webhooks/…"></label>
+      <label class="check" for="dcSummary"><input id="dcSummary" type="checkbox"> Send a summary when I save a session</label>
+      <label class="check" for="dcPdf"><input id="dcPdf" type="checkbox"> Attach the PDF report to summaries</label>
+      <label class="check" for="dcWater"><input id="dcWater" type="checkbox"> Send water reminders to Discord too</label>
+    </div>
+    <div class="row-btns">
+      <button id="dcTest">Send test message</button>
+      <button id="dcSendNow">Send latest report now</button>
+      <button id="dcForget">Remove link</button>
+    </div>
+    <p id="dcMsg" class="sub" hidden></p>
+  </section>
+
+  <section class="panel">
+    <h2>Settings</h2>
+    <div class="settings">
+      <label for="lowCut">Androgynous starts at (Hz)<input id="lowCut" type="number" min="80" max="300" step="1"></label>
+      <label for="highCut">Feminine starts at (Hz)<input id="highCut" type="number" min="90" max="350" step="1"></label>
+      <label for="target">Your target pitch (Hz, dashed line)<input id="target" type="number" min="0" max="400" step="1"></label>
+      <label for="window">Graph length<select id="window"><option value="10">10 seconds</option><option value="15">15 seconds</option><option value="30">30 seconds</option><option value="60">60 seconds</option></select></label>
+      <label for="gate">Noise gate<select id="gate"><option value="0.006">Sensitive</option><option value="0.012">Normal</option><option value="0.025">Noisy room</option></select></label>
+      <label for="ceiling">Comfort ceiling (Hz, strain warning above)<input id="ceiling" type="number" min="150" max="500" step="1"></label>
+      <label for="dropAlert">Sound when pitch drops<select id="dropAlert"><option value="off">Off</option><option value="chime">Soft chime after 1.5s in masculine range</option></select></label>
+      <label for="waterEvery">Water reminder<select id="waterEvery"><option value="5">Every 5 min of speaking</option><option value="10">Every 10 min of speaking</option><option value="15">Every 15 min of speaking</option><option value="0">Off</option></select></label>
+    </div>
+  </section>
+
+  <section class="tips">
+    <p><b>How to read it.</b> Typical speaking pitch is about 85–155 Hz for men and 165–255 Hz for women. The default bands treat under 145 Hz as masculine, 145–175 Hz as androgynous, and above 175 Hz as feminine. Many trainers aim for a speaking average around 180–200 Hz. Adjust the bands to match your coach or goals.</p>
+    <p><b>Pitch is only half of it.</b> Listeners rely heavily on resonance, the "size" of the space the voice rings in. A brighter, more forward sound reads more feminine even at the same pitch. The brightness meter gives a rough sense of this. Compare it on the same vowel ("ee" or "ah") rather than across different words.</p>
+    <p><b>Go easy on your voice.</b> Avoid pushing pitch up with throat tension. Short, frequent sessions work better than long ones. The voice care panel is an estimate from your microphone, not a medical check. Stop if your throat hurts or feels hoarse, and consider a speech-language pathologist who works with gender-affirming voice.</p>
+  </section>
+</div>
+
+<!-- PDF tools: the library is downloaded, but the PDF itself is built on your device and never uploaded -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const NOTES = ["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"];
+  const G_MIN = 70, G_MAX = 350;              // gauge + graph range (Hz)
+  const B_MIN = 1000, B_MAX = 2600;           // brightness centroid mapping (Hz)
+  const AP_MAX = 0.15;                        // YIN threshold; aperiodicity above this is unvoiced
+
+  // Everything is kept in this browser only (localStorage). Nothing is sent anywhere.
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+  };
+  const mean = a => a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0;
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const mmss = ms => { const s = Math.max(0, Math.round(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+  const clarityOf = ap => Math.round(clamp(100 * (1 - ap / AP_MAX), 0, 100));
+  let pip = null;                       // floating mini window (Document Picture-in-Picture)
+
+  const defaults = { lowCut: 145, highCut: 175, target: 190, window: "15", gate: "0.012", ceiling: 240, waterEvery: "10", dropAlert: "off" };
+  let cfg = { ...defaults, ...store.get("vpt-settings", {}) };
+  for (const k of Object.keys(defaults)) {
+    const el = $(k); el.value = cfg[k];
+    el.addEventListener("change", () => {
+      cfg[k] = el.tagName === "SELECT" ? el.value : Number(el.value);
+      if (cfg.highCut <= cfg.lowCut) { cfg.highCut = cfg.lowCut + 1; $("highCut").value = cfg.highCut; }
+      store.set("vpt-settings", cfg); layoutGauge(); renderReport();
+    });
+  }
+
+  // log-scale position of a frequency inside [G_MIN, G_MAX]
+  const pos = f => clamp(Math.log(f / G_MIN) / Math.log(G_MAX / G_MIN), 0, 1);
+  const zoneOf = (f, lo = cfg.lowCut, hi = cfg.highCut) => f < lo ? "masc" : f < hi ? "andro" : "fem";
+  const ZONE_LABEL = { masc: "Masculine range", andro: "Androgynous range", fem: "Feminine range" };
+
+  function layoutGauge() {
+    const a = pos(cfg.lowCut) * 100, b = pos(cfg.highCut) * 100;
+    $("segM").style.width = a + "%";
+    $("segA").style.width = (b - a) + "%";
+    $("segF").style.width = (100 - b) + "%";
+    $("ticks").innerHTML = [G_MIN, cfg.lowCut, cfg.highCut, G_MAX].map(v => `<span>${v}</span>`).join("");
+    $("secLabel").textContent = cfg.window;
+    $("ceilLabel").textContent = cfg.ceiling;
+    if (pip) miniBar();
+  }
+  layoutGauge();
+
+  function noteName(f) {
+    const n = Math.round(12 * Math.log2(f / 440)) + 69;
+    return `${NOTES[n % 12]}${Math.floor(n / 12) - 1}`;
+  }
+
+  // YIN pitch detection; also returns aperiodicity (lower = clearer tone)
+  function yin(buf, sr) {
+    const W = Math.floor(buf.length / 2);
+    const minTau = Math.floor(sr / 600), maxTau = Math.min(W - 1, Math.floor(sr / 60));
+    const d = new Float32Array(maxTau + 1);
+    for (let tau = 1; tau <= maxTau; tau++) {
+      let s = 0;
+      for (let i = 0; i < W; i++) { const x = buf[i] - buf[i + tau]; s += x * x; }
+      d[tau] = s;
+    }
+    let run = 0; d[0] = 1;
+    for (let tau = 1; tau <= maxTau; tau++) { run += d[tau]; d[tau] = run ? d[tau] * tau / run : 1; }
+    let tau = -1;
+    for (let t = minTau; t <= maxTau; t++) {
+      if (d[t] < AP_MAX) { while (t + 1 <= maxTau && d[t + 1] < d[t]) t++; tau = t; break; }
+    }
+    if (tau < 0) return null;
+    const a = d[tau - 1] ?? d[tau], b = d[tau], c = d[tau + 1] ?? d[tau];
+    const denom = a - 2 * b + c;
+    const shift = denom ? (a - c) / (2 * denom) : 0;
+    return { f: sr / (tau + shift), ap: b };
+  }
+
+  let ctx, analyser, timeBuf, freqBuf, running = false, demo = false;
+  const recent = [];                    // short median filter
+  let history = [];                     // {t, f}
+  let brightSmooth = null;
+  const stats = { sum: 0, n: 0, min: Infinity, max: -Infinity, masc: 0, andro: 0, fem: 0, voicedMs: 0 };
+  let lastFrame = performance.now();
+  let rec = null;                       // active practice recording
+  let demoTimer = null;                 // demo voice runs on a timer
+  let mascMs = 0, lastChime = 0, chimeCtx = null;
+
+  // ---------- Mini window (stays on top during Discord calls) ----------
+  const m = id => pip && pip.document.getElementById(id);
+  function miniBar() {
+    const a = pos(cfg.lowCut) * 100, b = pos(cfg.highCut) * 100;
+    m("mSegM").style.width = a + "%"; m("mSegA").style.width = (b - a) + "%"; m("mSegF").style.width = (100 - b) + "%";
+  }
+  function miniPitch(f, z) {
+    if (!pip) return;
+    if (f == null) {
+      m("mHz").textContent = "—"; m("mNote").textContent = "—";
+      m("mZone").className = "zone-pill none"; m("mZone").textContent = "No voice"; m("mMarker").hidden = true;
+      return;
+    }
+    m("mHz").textContent = Math.round(f); m("mNote").textContent = noteName(f);
+    m("mZone").className = "zone-pill " + z; m("mZone").textContent = ZONE_LABEL[z];
+    m("mMarker").hidden = false; m("mMarker").style.left = (pos(f) * 100) + "%";
+  }
+  function miniCare(level, label) { if (pip) { m("mCare").className = "care-pill " + level; m("mCare").textContent = label; } }
+  function miniWater(show) { if (pip) m("mWater").hidden = !show; }
+
+  $("pipBtn").addEventListener("click", async () => {
+    if (pip) { pip.close(); return; }
+    if (!window.documentPictureInPicture) {
+      $("error").textContent = "The mini window needs Chrome or Edge (version 116 or newer).";
+      $("error").hidden = false; return;
+    }
+    try { pip = await documentPictureInPicture.requestWindow({ width: 340, height: 210 }); }
+    catch (e) { $("error").textContent = "Couldn't open the mini window. Click the button again."; $("error").hidden = false; return; }
+    for (const ss of document.styleSheets) {
+      try {
+        const st = pip.document.createElement("style");
+        st.textContent = [...ss.cssRules].map(r => r.cssText).join("\n");
+        pip.document.head.append(st);
+      } catch (e) {
+        if (ss.href) { const l = pip.document.createElement("link"); l.rel = "stylesheet"; l.href = ss.href; pip.document.head.append(l); }
+      }
+    }
+    if (document.documentElement.dataset.theme) pip.document.documentElement.dataset.theme = document.documentElement.dataset.theme;
+    pip.document.title = "Voice pitch";
+    pip.document.body.style.padding = "0";
+    pip.document.body.innerHTML = `<div class="mini">
+      <div class="mini-top"><span class="hz"><span id="mHz">—</span><small>Hz</small></span><span class="hz note-big" id="mNote">—</span></div>
+      <div class="bar"><div class="m" id="mSegM">Masc</div><div class="a" id="mSegA">Andro</div><div class="f" id="mSegF">Fem</div><div class="marker" id="mMarker" hidden></div></div>
+      <div class="mini-row"><span class="zone-pill none" id="mZone">No voice</span><span class="care-pill ok" id="mCare">Relaxed</span></div>
+      <div class="mini-water" id="mWater" hidden><span>💧 Time for a sip of water</span><button id="mWaterDone">Done</button></div>
+    </div>`;
+    miniBar();
+    miniCare(care.level, $("careLevel").textContent);
+    miniWater(!$("water").hidden);
+    m("mWaterDone").addEventListener("click", () => $("waterDone").click());
+    $("pipBtn").textContent = "Close mini window";
+    pip.addEventListener("pagehide", () => { pip = null; $("pipBtn").textContent = "Mini window"; });
+  });
+
+  function chime() {
+    try {
+      chimeCtx = chimeCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const t = chimeCtx.currentTime, o = chimeCtx.createOscillator(), g = chimeCtx.createGain();
+      o.type = "sine"; o.frequency.setValueAtTime(880, t); o.frequency.exponentialRampToValueAtTime(1175, t + 0.18);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.08, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      o.connect(g).connect(chimeCtx.destination); o.start(t); o.stop(t + 0.4);
+    } catch (e) {}
+  }
+
+  // ---------- Voice care: strain + hydration ----------
+  const care = {};
+  function resetCare() {
+    Object.assign(care, { win: [], lastF: null, lastT: 0, breaks: [], baseSum: 0, baseN: 0, waterMs: 0, loudMs: 0, level: "ok", dry: false, drySnooze: 0, lastEval: 0 });
+    $("water").hidden = true;
+  }
+  resetCare();
+
+  function careFrame(now, dt, rawF, ap, rms) {
+    care.win.push({ t: now, ap, high: rawF > cfg.ceiling });
+    while (care.win.length && care.win[0].t < now - 8000) care.win.shift();
+    if (care.lastF && now - care.lastT < 120 && Math.abs(12 * Math.log2(rawF / care.lastF)) > 5) {
+      care.breaks.push(now);
+      if (rec) rec.breaks++;
+    }
+    care.lastF = rawF; care.lastT = now;
+    if (care.baseN < 600) { care.baseSum += ap; care.baseN++; }   // first ~10s of voice = your baseline
+    care.waterMs += dt;
+    care.loudMs = rms > 0.2 ? care.loudMs + dt : Math.max(0, care.loudMs - dt);
+  }
+
+  function careEval(now) {
+    if (now - care.lastEval < 400) return;
+    care.lastEval = now;
+    care.breaks = care.breaks.filter(t => t > now - 30000);
+    const every = Number(cfg.waterEvery);
+    $("cWater").textContent = every ? mmss(every * 60000 - care.waterMs) : "Off";
+    $("cCracks").textContent = care.breaks.length;
+    const w = care.win;
+    if (w.length < 20) return;
+    const clarity = clarityOf(mean(w.map(x => x.ap)));
+    const highPct = w.filter(x => x.high).length / w.length;
+    $("cClarity").textContent = clarity + " / 100";
+    $("cHigh").textContent = Math.round(highPct * 100) + "%";
+
+    const base = care.baseN >= 120 ? clarityOf(care.baseSum / care.baseN) : null;
+    const issues = [];
+    if (highPct > 0.6) issues.push(["watch", `Your pitch has stayed above your comfort ceiling (${cfg.ceiling} Hz). Ease down a little and keep your throat loose.`]);
+    if (care.breaks.length >= 3) issues.push([care.breaks.length >= 6 ? "rest" : "watch", `${care.breaks.length} voice breaks in the last 30 seconds. Breaks often mean the voice is tired or being pushed. Try a gentle hum or lip trill, or rest for a minute.`]);
+    care.dry = base != null && clarity < 60 && clarity < base - 15;
+    if (care.dry) issues.push(["watch", "Your voice sounds rougher or breathier than when you started. That can be a sign of a dry throat or fatigue. Sip some water and take a short break."]);
+    if (care.loudMs > 4000) issues.push(["watch", "You've been speaking quite loudly. Pushing volume adds strain. Try a softer, lighter voice."]);
+
+    const level = issues.some(i => i[0] === "rest") || issues.length >= 2 ? "rest" : issues.length ? "watch" : "ok";
+    if (level !== "ok" && care.level === "ok" && rec) rec.alerts++;
+    care.level = level;
+    $("careLevel").className = "care-pill " + level;
+    $("careLevel").textContent = { ok: "Relaxed", watch: "Watch for strain", rest: "Take a break" }[level];
+    miniCare(level, $("careLevel").textContent);
+    $("careMsg").textContent = issues.length ? issues.map(i => i[1]).join(" ") : "No signs of strain right now. Keep breathing low and easy, and stop if anything hurts.";
+
+    if ($("water").hidden) {
+      if (every && care.waterMs >= every * 60000) showWater(`You've been speaking for about ${every} minutes.`);
+      else if (care.dry && now > care.drySnooze && care.waterMs > 90000) showWater("Your voice is starting to sound a little dry or rough.");
+    }
+  }
+  function showWater(why) {
+    $("waterWhy").textContent = why; $("water").hidden = false; miniWater(true);
+    if (dc.url && dc.water) dcSend({ ...DC_BASE, content: `💧 Time for a sip of water. ${why}` }).catch(() => {});
+  }
+  $("waterDone").addEventListener("click", () => {
+    $("water").hidden = true; miniWater(false); care.waterMs = 0; care.drySnooze = performance.now() + 180000;
+    if (rec) rec.water++;
+  });
+
+  // ---------- Audio sources ----------
+  function startDemo() {
+    if (running) stop();
+    demo = true; running = true; resetCare();
+    $("demo").textContent = "Stop demo";
+    $("demoNote").hidden = false;
+    lastFrame = performance.now();
+    demoTimer = setInterval(() => loop(performance.now()), 33);
+  }
+  function stopDemo() {
+    demo = false; running = false;
+    clearInterval(demoTimer);
+    $("demo").textContent = "Play demo";
+    $("demoNote").hidden = true;
+    showSilence("Press Start and speak or hum");
+  }
+  $("demo").addEventListener("click", () => demo ? stopDemo() : startDemo());
+
+  // Simulated speaker: phrases of ~2.5s that drift from a masculine start toward a feminine target, with pauses
+  function demoSample(now) {
+    const s = now / 1000, phrase = s % 3.2;
+    if (phrase > 2.5) return { rms: 0, f: null, c: null, ap: null };
+    const drift = 150 + 40 * Math.sin(s / 9);                  // slow practice drift ~110–190 Hz
+    const contour = 25 * Math.sin(phrase * 2.4) - 10 * phrase;  // rise then fall within the phrase
+    let f = drift + contour + 4 * Math.sin(s * 31);             // small vibrato
+    if (Math.floor(s * 12) % 151 === 0) f *= 1.5;               // the odd voice break
+    const rms = 0.03 + 0.04 * Math.abs(Math.sin(phrase * Math.PI * 4.5));   // ~4.5 syllable pulses a second
+    return { rms, f, c: 1200 + (f - 110) * 9, ap: 0.035 + 0.03 * (0.5 + 0.5 * Math.sin(s / 20)) };
+  }
+
+  async function start() {
+    if (demo) stopDemo();
+    $("error").hidden = true;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = ctx.createMediaStreamSource(stream);
+      analyser = ctx.createAnalyser();
+      analyser.fftSize = 4096;
+      analyser.smoothingTimeConstant = 0.2;
+      src.connect(analyser);
+      timeBuf = new Float32Array(analyser.fftSize);
+      freqBuf = new Float32Array(analyser.frequencyBinCount);
+      // Drive analysis from the audio thread so it keeps running while you're in another app (e.g. Discord)
+      const tick = ctx.createScriptProcessor(2048, 1, 1), mute = ctx.createGain();
+      mute.gain.value = 0;
+      src.connect(tick); tick.connect(mute).connect(ctx.destination);
+      tick.onaudioprocess = () => loop(performance.now());
+      running = true; resetCare();
+      $("start").textContent = "Stop microphone";
+      $("start").classList.remove("primary");
+      $("note").textContent = "Listening…";
+      lastFrame = performance.now();
+    } catch (e) {
+      $("error").textContent = "Couldn't use the microphone. Allow microphone access for this page in your browser (the icon in the address bar), then press Start again.";
+      $("error").hidden = false;
+    }
+  }
+  function stop() {
+    running = false;
+    if (ctx) ctx.close();
+    $("start").textContent = "Start microphone";
+    $("start").classList.add("primary");
+    showSilence("Microphone off");
+  }
+  $("start").addEventListener("click", () => running && !demo ? stop() : start());
+  $("reset").addEventListener("click", () => {
+    Object.assign(stats, { sum: 0, n: 0, min: Infinity, max: -Infinity, masc: 0, andro: 0, fem: 0, voicedMs: 0 });
+    history = []; renderStats(); drawTrace();
+  });
+
+  function showSilence(msg) {
+    $("hz").textContent = "—";
+    $("noteName").textContent = "—";
+    $("note").textContent = msg;
+    $("zone").className = "zone-pill none";
+    $("zone").textContent = "No voice detected";
+    $("marker").hidden = true;
+  }
+
+  function brightness(sr) {
+    analyser.getFloatFrequencyData(freqBuf);
+    const binHz = sr / analyser.fftSize;
+    let num = 0, den = 0;
+    for (let i = Math.floor(300 / binHz); i < Math.floor(5000 / binHz); i++) {
+      const p = Math.pow(10, freqBuf[i] / 10);
+      num += p * i * binHz; den += p;
+    }
+    return den ? num / den : null;
+  }
+
+  function loop(now) {
+    if (!running) return;
+    const dt = Math.min(100, now - lastFrame); lastFrame = now;
+    let rms = 0, f = null, ap = null, sim = null;
+    if (demo) {
+      sim = demoSample(now); rms = sim.rms; f = sim.f; ap = sim.ap;
+    } else {
+      analyser.getFloatTimeDomainData(timeBuf);
+      for (let i = 0; i < timeBuf.length; i++) rms += timeBuf[i] * timeBuf[i];
+      rms = Math.sqrt(rms / timeBuf.length);
+      if (rms > Number(cfg.gate)) { const y = yin(timeBuf, ctx.sampleRate); if (y) { f = y.f; ap = y.ap; } }
+    }
+    $("level").style.width = Math.min(100, rms * 600) + "%";
+
+    if (f && f >= 60 && f <= 600) {
+      careFrame(now, dt, f, ap, rms);
+      recent.push(f); if (recent.length > 5) recent.shift();
+      const sorted = [...recent].sort((a, b) => a - b);
+      f = sorted[Math.floor(sorted.length / 2)];
+      const z = zoneOf(f);
+      $("hz").textContent = Math.round(f);
+      $("noteName").textContent = noteName(f);
+      $("note").textContent = "Pitch and nearest musical note";
+      $("zone").className = "zone-pill " + z;
+      $("zone").textContent = ZONE_LABEL[z];
+      $("marker").hidden = false;
+      $("marker").style.left = (pos(f) * 100) + "%";
+      miniPitch(f, z);
+      mascMs = z === "masc" ? mascMs + dt : 0;
+      if (cfg.dropAlert === "chime" && mascMs > 1500 && now - lastChime > 8000) { chime(); lastChime = now; }
+
+      let bp = null;
+      const c = demo ? sim.c : brightness(ctx.sampleRate);
+      if (c) {
+        brightSmooth = brightSmooth == null ? c : brightSmooth * 0.85 + c * 0.15;
+        bp = clamp((brightSmooth - B_MIN) / (B_MAX - B_MIN), 0, 1);
+        $("brightMarker").style.left = (bp * 100) + "%";
+        $("brightVal").textContent = Math.round(bp * 100) + " / 100";
+      }
+
+      stats.sum += f; stats.n++; stats.min = Math.min(stats.min, f); stats.max = Math.max(stats.max, f);
+      stats[z] += dt; stats.voicedMs += dt;
+      history.push({ t: now, f });
+      if (rec) {
+        rec.f.push(f); rec.ap.push(ap); if (bp != null) rec.b.push(bp);
+        rec.voicedMs += dt;
+      }
+      if (rd.on) readerFrame(now, dt, f, bp, rms);
+    } else {
+      recent.length = 0; care.lastF = null;
+      showSilence("Listening…");
+      miniPitch(null);
+      if (rd.on) readerFrame(now, dt, null, null, rms);
+      history.push({ t: now, f: null });
+    }
+    careEval(now);
+    const cutoff = now - 60000;
+    while (history.length && history[0].t < cutoff) history.shift();
+    if (!document.hidden) drawTrace(now);
+    if (stats.n % 10 === 0) renderStats();
+  }
+
+  function renderStats() {
+    $("avg").textContent = stats.n ? Math.round(stats.sum / stats.n) + " Hz" : "—";
+    $("min").textContent = stats.n ? Math.round(stats.min) + " Hz" : "—";
+    $("max").textContent = stats.n ? Math.round(stats.max) + " Hz" : "—";
+    $("time").textContent = Math.round(stats.voicedMs / 1000) + "s";
+    const tot = stats.voicedMs || 1;
+    for (const [k, bar, lab] of [["masc", "pM", "tM"], ["andro", "pA", "tA"], ["fem", "pF", "tF"]]) {
+      const p = stats.voicedMs ? Math.round(stats[k] / tot * 100) : 0;
+      $(bar).style.width = p + "%"; $(lab).textContent = p + "%";
+    }
+  }
+
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  function prepCanvas(cv) {
+    const g = cv.getContext("2d"), dpr = window.devicePixelRatio || 1;
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (cv.width !== w * dpr || cv.height !== h * dpr) { cv.width = w * dpr; cv.height = h * dpr; }
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+    return { g, w, h };
+  }
+  function drawBands(g, L, R, y, lo, hi) {
+    for (const [a, b, c] of [[G_MIN, lo, "--masc-bg"], [lo, hi, "--andro-bg"], [hi, G_MAX, "--fem-bg"]]) {
+      g.fillStyle = css(c); g.fillRect(L, y(b), R - L, y(a) - y(b));
+    }
+    g.font = "11px " + css("--font-mono"); g.fillStyle = css("--muted"); g.strokeStyle = css("--line"); g.lineWidth = 1;
+    g.textAlign = "right"; g.textBaseline = "middle";
+    for (const v of [80, 100, 125, 150, 175, 200, 250, 300]) {
+      g.beginPath(); g.moveTo(L, y(v) + .5); g.lineTo(R, y(v) + .5); g.stroke();
+      g.fillText(v, L - 6, y(v));
+    }
+  }
+  function drawTarget(g, L, R, y) {
+    if (cfg.target > G_MIN && cfg.target < G_MAX) {
+      g.setLineDash([5, 4]); g.strokeStyle = css("--fg"); g.globalAlpha = .5; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(L, y(cfg.target)); g.lineTo(R, y(cfg.target)); g.stroke();
+      g.setLineDash([]); g.globalAlpha = 1;
+    }
+  }
+  const zoneColor = z => css({ masc: "--masc", andro: "--andro", fem: "--fem" }[z]);
+
+  function drawTrace(now = performance.now()) {
+    const { g, w, h } = prepCanvas($("trace"));
+    const L = 40, R = w - 6, T = 6, B = h - 22;
+    const y = f => B - pos(f) * (B - T);
+    drawBands(g, L, R, y, cfg.lowCut, cfg.highCut);
+    const span = Number(cfg.window) * 1000;
+    g.textAlign = "center"; g.textBaseline = "top";
+    const step = span <= 15000 ? 5000 : span <= 30000 ? 10000 : 15000;
+    for (let s = 0; s <= span; s += step) {
+      const x = R - (s / span) * (R - L);
+      g.fillText(s === 0 ? "now" : `-${s / 1000}s`, x, B + 6);
+    }
+    drawTarget(g, L, R, y);
+    g.lineWidth = 2.5; g.lineJoin = g.lineCap = "round";
+    let prev = null;
+    for (const p of history) {
+      const x = R - ((now - p.t) / span) * (R - L);
+      if (x < L || p.f == null || p.f < G_MIN || p.f > G_MAX) { prev = null; continue; }
+      const pt = { x, y: y(p.f), z: zoneOf(p.f) };
+      if (prev) {
+        g.strokeStyle = zoneColor(pt.z);
+        g.beginPath(); g.moveTo(prev.x, prev.y); g.lineTo(pt.x, pt.y); g.stroke();
+      }
+      prev = pt;
+    }
+  }
+
+  // ---------- Practice recording ----------
+  let sessions = store.get("vpt-sessions", []);
+  const saveSessions = () => store.set("vpt-sessions", sessions);
+  function reportMsg(text) { $("reportMsg").textContent = text; $("reportMsg").hidden = !text; }
+
+  $("recBtn").addEventListener("click", async () => {
+    if (rec) return saveRec();
+    if (!running) await start();
+    if (!running) return;
+    rec = { started: Date.now(), demo, f: [], ap: [], b: [], voicedMs: 0, breaks: 0, water: 0, alerts: 0 };
+    $("recBtn").textContent = "Finish and save session";
+    $("recCancel").hidden = false;
+    reportMsg("");
+  });
+  $("recCancel").addEventListener("click", () => { rec = null; endRecUI(); });
+  function endRecUI() {
+    $("recBtn").textContent = "Start recording session";
+    $("recCancel").hidden = true;
+    $("recStatus").className = "rec-status";
+    $("recStatus").textContent = "Not recording";
+  }
+  setInterval(() => {
+    if (!rec) return;
+    $("recStatus").className = "rec-status on";
+    $("recStatus").textContent = `Recording ${mmss(Date.now() - rec.started)} · ${Math.round(rec.voicedMs / 1000)}s of voice${rec.demo ? " (demo voice)" : ""}`;
+  }, 500);
+
+  function saveRec() {
+    const r = rec;
+    if (r.f.length < 60) { reportMsg("Not enough voice recorded yet. Speak for at least a few seconds, then finish the session."); return; }
+    rec = null; endRecUI();
+    const sorted = [...r.f].sort((a, b) => a - b);
+    const q = p => sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+    const median = q(0.5);
+    const semis = r.f.map(f => 12 * Math.log2(f / median));
+    const sd = Math.sqrt(mean(semis.map(s => s * s)));
+    const zt = { masc: 0, andro: 0, fem: 0 };
+    r.f.forEach(f => zt[zoneOf(f)]++);
+    const third = Math.max(1, Math.floor(r.ap.length / 3));
+    const voicedS = Math.max(1, Math.round(r.voicedMs / 1000));
+    const pct = n => Math.round(n / r.f.length * 100);
+    sessions.push({
+      id: Date.now().toString(36), date: new Date().toISOString(), demo: r.demo,
+      exercise: $("exercise").value, strain: Number($("strain").value), notes: $("sessNotes").value.trim(),
+      durationS: Math.round((Date.now() - r.started) / 1000), voicedS,
+      avg: Math.round(mean(r.f)), median: Math.round(median), min: Math.round(sorted[0]), max: Math.round(sorted[sorted.length - 1]),
+      p10: Math.round(q(0.1)), p90: Math.round(q(0.9)), sdSemi: Math.round(sd * 10) / 10,
+      masc: pct(zt.masc), andro: pct(zt.andro), fem: pct(zt.fem),
+      bright: r.b.length ? Math.round(mean(r.b) * 100) : null,
+      clarity: clarityOf(mean(r.ap)), clarityEarly: clarityOf(mean(r.ap.slice(0, third))), clarityLate: clarityOf(mean(r.ap.slice(-third))),
+      breaksPerMin: Math.round(r.breaks / Math.max(voicedS / 60, 0.25) * 10) / 10,
+      highPct: pct(r.f.filter(f => f > cfg.ceiling).length),
+      water: r.water, alerts: r.alerts,
+      target: cfg.target, lowCut: cfg.lowCut, highCut: cfg.highCut, ceiling: cfg.ceiling
+    });
+    $("sessNotes").value = "";
+    const saved = saveSessions() ? "Session saved to this browser." : "This browser blocked saving, so the session will be lost when you close the page. Download the report to keep it.";
+    reportMsg(saved);
+    renderReport();
+    if (dc.url && dc.summary) {
+      dcSendReport(sessions[sessions.length - 1]).then(() => reportMsg(saved + " Summary sent to Discord."),
+        e => reportMsg(saved + " Sending to Discord didn't work: " + e.message));
+    }
+  }
+
+  // ---------- Coaching ----------
+  const SPEECH = s => !/vowel|glide|hum/i.test(s.exercise);
+  function coach(list) {
+    const s = list[list.length - 1], first = list[0], out = [];
+    const add = (kind, title, text) => out.push({ kind, title, text });
+    const note = noteName(s.target);
+
+    if (s.strain >= 4) add("care", "You said your throat felt tired, tight or sore", "Rest your voice for the rest of today. Sip water and avoid whispering, which strains the voice too. If hoarseness lasts more than two weeks, see a doctor or a speech-language pathologist.");
+    else if (s.strain === 3) add("care", "Some effort reported", "A little effort is normal while learning, but aim for comfortable. If you feel tension in your throat, lower the pitch slightly and focus on resonance instead.");
+    if (s.clarityLate < s.clarityEarly - 12) add("care", "Your voice got rougher as the session went on", `Clarity dropped from ${s.clarityEarly} to ${s.clarityLate}. That's a common sign of a dry throat or tired voice. Drink water before you start, pause every 10 minutes, and try shorter sessions.`);
+    if (s.breaksPerMin >= 2) add("care", `Frequent voice breaks (${s.breaksPerMin} per minute)`, "Breaks usually come from pushing pitch or running out of air. Warm up with lip trills, take a breath before each phrase, and ease the pitch down a little.");
+    if (s.highPct >= 25 || s.avg > s.ceiling - 10) add("care", "Pitch is running near the top of your range", `${s.highPct}% of your voice was above your comfort ceiling (${s.ceiling} Hz). Higher isn't always more feminine and can sound forced. Try settling 10–20 Hz lower and let resonance do more of the work.`);
+    if (s.water === 0 && s.durationS > 600) add("care", "No water breaks logged", "Keep water nearby and sip regularly. Well-hydrated vocal folds vibrate more easily and tire less.");
+
+    if (s.avg < s.lowCut) add("focus", `Average sat in the masculine range (${s.avg} Hz)`, `Raise your baseline in small steps, about 5–10 Hz a week, rather than jumping to the target. Start each session with gentle sirens, then hum "mm" on your target note (${note}) and speak a few words from there.`);
+    else if (s.avg < s.highCut) add("focus", `Average is in the androgynous range (${s.avg} Hz)`, `You're close. Practice short phrases that start on your target note (${note}), and watch the graph for drops at the ends of sentences.`);
+    else add("good", `Average is in the feminine range (${s.avg} Hz)`, Math.abs(s.avg - s.target) <= 15 ? "That's right around your target. Keep it relaxed and build stamina with longer conversations." : `Your target is ${s.target} Hz. Stay comfortable rather than chasing the exact number.`);
+
+    if (s.p10 < s.lowCut && s.avg >= s.lowCut) add("focus", "Your lowest moments dip into the masculine range", `The bottom of your usual range was ${s.p10} Hz. This often happens at the ends of sentences or with vocal fry. End phrases with a slight lift and keep air flowing through the last word.`);
+    if (SPEECH(s)) {
+      if (s.sdSemi < 2) add("focus", "Intonation is fairly flat", `Your pitch moved about ±${s.sdSemi} semitones. Feminine speech often uses more melody. Read aloud with exaggerated ups and downs, and stress key words with pitch instead of volume.`);
+      else if (s.sdSemi >= 3) add("good", "Good pitch movement", `Your pitch moved about ±${s.sdSemi} semitones, which gives speech a lively, expressive sound.`);
+    }
+    if (s.bright != null && s.bright < 35) add("focus", "Resonance sounds darker", `Brightness was ${s.bright}/100. Try the "big dog, small dog" exercise: pant like a small dog to feel your larynx rise, then speak from that feeling. Keep a slight smile and your tongue forward, and practice "ee" words.`);
+    else if (s.bright != null && s.bright >= 55) add("good", "Bright, forward resonance", `Brightness was ${s.bright}/100. Resonance does a lot of the work in how a voice is heard, so this is a strong base.`);
+
+    if (list.length >= 2) {
+      const diff = s.avg - first.avg;
+      if (diff >= 5) add("good", `Up ${diff} Hz since your first session`, `From ${first.avg} Hz to ${s.avg} Hz across ${list.length} sessions. Steady, gradual change is the healthy way to do it.`);
+      else if (diff <= -5) add("focus", `Down ${-diff} Hz since your first session`, "This can happen when you're tired or focusing on resonance. Check in with how your throat feels before pushing pitch.");
+      if (s.fem - first.fem >= 10) add("good", `More time in the feminine range`, `${first.fem}% in your first session, ${s.fem}% in your latest.`);
+    }
+    const order = { care: 0, focus: 1, good: 2 };
+    return out.sort((a, b) => order[a.kind] - order[b.kind]);
+  }
+  const KIND = { care: "Voice care", focus: "Focus", good: "Going well" };
+
+  // ---------- Report ----------
+  const fmtDate = iso => new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const fmtLen = s => s >= 60 ? `${Math.round(s / 60)} min` : `${s}s`;
+  const THROAT = ["", "Relaxed", "Comfortable", "Some effort", "Tired/tight", "Sore/hoarse"];
+
+  function renderReport() {
+    const has = sessions.length > 0;
+    $("reportEmpty").hidden = has; $("reportBody").hidden = !has;
+    $("loadExamples").textContent = sessions.some(s => s.example) ? "Remove example sessions" : "Load example sessions";
+    if (!has) return;
+    const s = sessions[sessions.length - 1], first = sessions[0];
+    $("rCount").textContent = sessions.length;
+    $("rTotal").textContent = fmtLen(sessions.reduce((t, x) => t + x.durationS, 0));
+    $("rLatest").textContent = `${s.avg} Hz`;
+    const d = s.avg - first.avg;
+    $("rChange").textContent = sessions.length > 1 ? `${d >= 0 ? "+" : "−"}${Math.abs(d)} Hz` : "—";
+
+    $("coach").innerHTML = coach(sessions).map(c =>
+      `<li><span class="tag ${c.kind}">${KIND[c.kind]}</span><b>${esc(c.title)}</b><p>${esc(c.text)}</p></li>`).join("");
+
+    $("log").tBodies[0].innerHTML = sessions.slice().reverse().map(x => `<tr>
+      <td class="num">${fmtDate(x.date)}${x.example ? '<span class="badge">example</span>' : ""}${x.demo ? '<span class="badge">demo</span>' : ""}</td>
+      <td>${esc(x.exercise)}</td>
+      <td class="num">${fmtLen(x.durationS)}</td>
+      <td class="num">${x.avg} Hz</td>
+      <td class="num">${x.p10}–${x.p90}</td>
+      <td class="num">${x.fem}%</td>
+      <td class="num">${x.bright ?? "—"}</td>
+      <td class="num">${x.clarity}</td>
+      <td class="num">${x.breaksPerMin}</td>
+      <td class="num">${x.water}</td>
+      <td>${THROAT[x.strain]}</td>
+      <td class="notes">${esc(x.notes) || '<span class="sub">—</span>'}</td>
+      <td><button data-del="${x.id}">Delete</button></td></tr>`).join("");
+    drawProgress();
+  }
+
+  $("log").addEventListener("click", e => {
+    const b = e.target.closest("button[data-del]");
+    if (!b) return;
+    if (b.dataset.armed) {
+      sessions = sessions.filter(x => x.id !== b.dataset.del);
+      saveSessions(); renderReport();
+    } else { b.dataset.armed = "1"; b.textContent = "Confirm delete"; b.classList.add("danger"); }
+  });
+  $("clearAll").addEventListener("click", () => { $("clearConfirm").hidden = false; });
+  $("clearNo").addEventListener("click", () => { $("clearConfirm").hidden = true; });
+  $("clearYes").addEventListener("click", () => {
+    sessions = []; saveSessions(); $("clearConfirm").hidden = true; renderReport();
+  });
+
+  function drawProgress() {
+    const { g, w, h } = prepCanvas($("progress"));
+    const L = 40, R = w - 16, T = 8, B = h - 24;
+    const y = f => B - pos(f) * (B - T);
+    drawBands(g, L, R, y, cfg.lowCut, cfg.highCut);
+    drawTarget(g, L, R, y);
+    const n = sessions.length;
+    const x = i => n === 1 ? (L + R) / 2 : L + 18 + i * ((R - L - 36) / (n - 1));
+    const every = Math.ceil(n / Math.max(1, Math.floor((R - L) / 60)));
+    g.textAlign = "center"; g.textBaseline = "top"; g.fillStyle = css("--muted");
+    sessions.forEach((s, i) => { if (i % every === 0 || i === n - 1) g.fillText(fmtDate(s.date), x(i), B + 7); });
+    g.lineWidth = 1.5; g.strokeStyle = css("--muted"); g.globalAlpha = .6;
+    g.beginPath(); sessions.forEach((s, i) => i ? g.lineTo(x(i), y(s.avg)) : g.moveTo(x(i), y(s.avg))); g.stroke();
+    g.globalAlpha = 1;
+    sessions.forEach((s, i) => {
+      const c = zoneColor(zoneOf(s.avg, s.lowCut, s.highCut));
+      g.strokeStyle = c; g.lineWidth = 4; g.lineCap = "round"; g.globalAlpha = .45;
+      g.beginPath(); g.moveTo(x(i), y(s.p10)); g.lineTo(x(i), y(s.p90)); g.stroke();
+      g.globalAlpha = 1; g.fillStyle = c;
+      g.beginPath(); g.arc(x(i), y(s.avg), i === n - 1 ? 6 : 4.5, 0, Math.PI * 2); g.fill();
+    });
+  }
+
+  function reportText() {
+    const lines = [];
+    const s = sessions[sessions.length - 1], first = sessions[0];
+    lines.push("VOICE PRACTICE REPORT", `Made ${new Date().toLocaleString()} on this device. Private to you.`, "");
+    lines.push("SUMMARY");
+    lines.push(`Sessions: ${sessions.length}   Total practice: ${fmtLen(sessions.reduce((t, x) => t + x.durationS, 0))}`);
+    lines.push(`Latest average: ${s.avg} Hz (${noteName(s.avg)})   Target: ${s.target} Hz (${noteName(s.target)})`);
+    if (sessions.length > 1) lines.push(`Change since first session: ${s.avg - first.avg >= 0 ? "+" : ""}${s.avg - first.avg} Hz`);
+    lines.push(`Ranges used: masculine < ${s.lowCut} Hz, androgynous ${s.lowCut}–${s.highCut} Hz, feminine > ${s.highCut} Hz`, "");
+    lines.push("COACHING NOTES");
+    coach(sessions).forEach(c => lines.push(`- [${KIND[c.kind]}] ${c.title}`, `  ${c.text}`));
+    lines.push("", "SESSION LOG");
+    sessions.forEach(x => {
+      lines.push(`${fmtDate(x.date)}${x.example ? " (example)" : ""}${x.demo ? " (demo)" : ""} · ${x.exercise} · ${fmtLen(x.durationS)}`);
+      lines.push(`  Average ${x.avg} Hz, usual range ${x.p10}–${x.p90} Hz, feminine ${x.fem}% / androgynous ${x.andro}% / masculine ${x.masc}%`);
+      lines.push(`  Brightness ${x.bright ?? "—"}/100, clarity ${x.clarity}/100 (start ${x.clarityEarly}, end ${x.clarityLate}), breaks ${x.breaksPerMin}/min, water breaks ${x.water}, throat: ${THROAT[x.strain]}`);
+      if (x.notes) lines.push(`  Notes: ${x.notes}`);
+    });
+    lines.push("", "These numbers are estimates from a microphone, not a medical assessment. If your voice hurts or stays hoarse, rest it and talk to a speech-language pathologist.");
+    return lines.join("\n");
+  }
+
+  $("copyReport").addEventListener("click", () => {
+    if (!sessions.length) return reportMsg("Save a session first, then copy the report.");
+    const text = reportText();
+    navigator.clipboard.writeText(text).then(() => reportMsg("Report copied. Paste it into notes, a message or a document."),
+      () => reportMsg("Your browser blocked copying. Use Download report instead."));
+  });
+  $("dlReport").addEventListener("click", () => {
+    if (!sessions.length) return reportMsg("Save a session first, then download the report.");
+    if (!window.jspdf?.jsPDF) return reportMsg("The PDF tools didn't load. They need an internet connection the first time the page opens. Use Copy report for now.");
+    try {
+      buildPdf().save(`voice-report-${new Date().toISOString().slice(0, 10)}.pdf`);
+      reportMsg("PDF report saved to your computer.");
+    } catch (e) {
+      reportMsg("Couldn't create the PDF. Use Copy report instead.");
+    }
+  });
+
+  // ---------- PDF report (built entirely on this device) ----------
+  const pdfSafe = s => String(s ?? "").replace(/♯/g, "#").replace(/[−–—]/g, "-").replace(/[“”]/g, '"').replace(/[‘’]/g, "'")
+    .replace(/…/g, "...").replace(/[^\x00-\xFF]/g, "");
+  const wAvg = (list, key) => {
+    const xs = list.filter(x => x[key] != null), wt = xs.reduce((t, x) => t + (x.voicedS || 1), 0);
+    return xs.length ? xs.reduce((t, x) => t + x[key] * (x.voicedS || 1), 0) / wt : null;
+  };
+
+  function practicePlan(list) {
+    const s = list[list.length - 1], out = [];
+    const tired = s.strain >= 4 || s.clarityLate < s.clarityEarly - 12 || s.breaksPerMin >= 2;
+    const step = tired ? 0 : s.avg < s.target - 20 ? 8 : 4;
+    const next = Math.round(Math.min(s.target, s.avg + step));
+    out.push(["Pitch goal for next week", tired
+      ? `Hold steady around ${s.avg} Hz (${noteName(s.avg)}) while your voice recovers. Comfort comes first. Your long-term target is ${s.target} Hz.`
+      : `Aim for an average around ${next} Hz (${noteName(next)}). Your long-term target is ${s.target} Hz (${noteName(s.target)}). Small steps of 5-10 Hz a week are healthy.`]);
+    out.push(["Session length", `${tired ? "10" : "15-20"} minutes, 4-6 days a week. Short, frequent practice works better than long, occasional sessions.`]);
+    out.push(["Warm-up (3 minutes)", `Lip trills or humming through a straw, sliding gently up and down. Then hum "mm" on ${noteName(next)} and open into a few words.`]);
+    if (s.avg < s.highCut) out.push(["Pitch placement", "Read short phrases that each start from a hum on your goal note. Keep the live graph inside the feminine band for a whole sentence, then a whole paragraph."]);
+    if (s.p10 < s.lowCut) out.push(["Sentence endings", "Read sentences slowly and keep the last word up, with steady airflow. Record yourself and listen for drops or creak at the end."]);
+    if (SPEECH(s) && s.sdSemi < 2.5) out.push(["Intonation", "Read children's stories or dialogue with exaggerated melody. Rise on questions, and stress key words with pitch instead of volume."]);
+    if (s.bright == null || s.bright < 45) out.push(["Resonance", 'Do "big dog, small dog": pant like a small dog to feel the larynx rise. Then whisper "ee" words, and voice them while keeping the same small, bright mouth space.']);
+    out.push(["Hydration", `Drink water before you start and sip every ${Number(cfg.waterEvery) || 10} minutes. Lots of caffeine or alcohol before practice can dry the voice.`]);
+    out.push(["Cool-down", "Finish with a few gentle yawn-sighs from high to low, then a minute of quiet. Stop early if anything feels tight or sore."]);
+    return out;
+  }
+
+  function buildPdf() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 16, CW = W - 2 * M;
+    const C = { ink: [31, 26, 36], muted: [108, 100, 117], line: [227, 221, 232], accent: [194, 65, 122],
+      masc: [63, 127, 184], andro: [138, 98, 184], fem: [210, 79, 134],
+      mascBg: [229, 238, 247], androBg: [239, 233, 247], femBg: [250, 231, 239] };
+    let y = M;
+    const ensure = h => { if (y + h > H - 18) { doc.addPage(); y = M; } };
+    const text = (str, x, yy, opts) => doc.text(pdfSafe(str), x, yy, opts);
+    const heading = str => {
+      ensure(14); y += 4;
+      doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(...C.ink); text(str, M, y); y += 2;
+      doc.setDrawColor(...C.line); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); y += 6;
+    };
+    const para = (str, size = 9.5, color = C.muted, indent = 0) => {
+      doc.setFont("helvetica", "normal"); doc.setFontSize(size); doc.setTextColor(...color);
+      const lines = doc.splitTextToSize(pdfSafe(str), CW - indent);
+      ensure(lines.length * size * 0.45);
+      doc.text(lines, M + indent, y); y += lines.length * size * 0.45 + 1.5;
+    };
+
+    const s = sessions[sessions.length - 1], first = sessions[0];
+
+    // Title
+    doc.setFillColor(...C.accent); doc.rect(0, 0, W, 3, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.setTextColor(...C.ink); text("Voice Practice Report", M, y + 6); y += 13;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(...C.muted);
+    text(`${fmtDate(first.date)} to ${fmtDate(s.date)}  ·  ${sessions.length} session${sessions.length > 1 ? "s" : ""}  ·  Created ${new Date().toLocaleDateString()} on your device. Private to you.`, M, y); y += 8;
+    if (sessions.some(x => x.example)) { para("Includes example sessions (not real recordings).", 9, C.accent); y += 1; }
+
+    // Averages: stat tiles
+    heading("Your averages");
+    const avgPitch = Math.round(wAvg(sessions, "avg")), avgFem = Math.round(wAvg(sessions, "fem")),
+      avgBright = wAvg(sessions, "bright"), avgClar = Math.round(wAvg(sessions, "clarity")), avgBreaks = wAvg(sessions, "breaksPerMin");
+    const totalWater = sessions.reduce((t, x) => t + (x.water || 0), 0);
+    const tiles = [
+      ["Latest average", `${s.avg} Hz`, noteName(s.avg)],
+      ["Change since first", sessions.length > 1 ? `${s.avg - first.avg >= 0 ? "+" : "-"}${Math.abs(s.avg - first.avg)} Hz` : "-", `from ${first.avg} Hz`],
+      ["Average over all sessions", `${avgPitch} Hz`, noteName(avgPitch)],
+      ["Target", `${s.target} Hz`, noteName(s.target)],
+      ["Time in feminine range", `${avgFem}%`, `latest ${s.fem}%`],
+      ["Brightness (resonance)", avgBright == null ? "-" : `${Math.round(avgBright)}/100`, s.bright == null ? "" : `latest ${s.bright}`],
+      ["Clarity", `${avgClar}/100`, `latest ${s.clarity}`],
+      ["Voice breaks", `${avgBreaks.toFixed(1)}/min`, `${totalWater} water breaks logged`]
+    ];
+    const tw = (CW - 3 * 4) / 4, th = 19;
+    ensure(th * 2 + 8);
+    tiles.forEach(([k, v, sub], i) => {
+      const x = M + (i % 4) * (tw + 4), ty = y + Math.floor(i / 4) * (th + 4);
+      doc.setFillColor(248, 246, 250); doc.setDrawColor(...C.line); doc.roundedRect(x, ty, tw, th, 2, 2, "FD");
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...C.muted); text(k, x + 3, ty + 5);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(...C.ink); text(v, x + 3, ty + 12);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...C.muted); text(sub, x + 3, ty + 16.5);
+    });
+    y += th * 2 + 8;
+
+    // Chart
+    heading("Average pitch per session");
+    const ch = 58; ensure(ch + 12);
+    const L = M + 12, R = W - M - 4, T = y, B = y + ch;
+    const py = f => B - pos(f) * (B - T);
+    [[G_MIN, s.lowCut, C.mascBg], [s.lowCut, s.highCut, C.androBg], [s.highCut, G_MAX, C.femBg]].forEach(([a, b, c]) => {
+      doc.setFillColor(...c); doc.rect(L, py(b), R - L, py(a) - py(b), "F");
+    });
+    doc.setFontSize(7); doc.setTextColor(...C.muted); doc.setDrawColor(...C.line); doc.setLineWidth(0.2);
+    [100, 125, 150, 175, 200, 250, 300].forEach(v => { doc.line(L, py(v), R, py(v)); text(String(v), L - 2, py(v) + 1, { align: "right" }); });
+    doc.setFontSize(7); text("Hz", M, T + 2);
+    doc.setDrawColor(...C.ink); doc.setLineDashPattern([1.2, 1.2], 0); doc.setLineWidth(0.3);
+    doc.line(L, py(s.target), R, py(s.target)); doc.setLineDashPattern([], 0);
+    text(`target ${s.target} Hz`, L + 2, py(s.target) - 1.2);
+    const n = sessions.length, px = i => n === 1 ? (L + R) / 2 : L + 6 + i * ((R - L - 12) / (n - 1));
+    doc.setDrawColor(...C.muted); doc.setLineWidth(0.4);
+    for (let i = 1; i < n; i++) doc.line(px(i - 1), py(sessions[i - 1].avg), px(i), py(sessions[i].avg));
+    const every = Math.ceil(n / 8);
+    sessions.forEach((x, i) => {
+      const c = C[zoneOf(x.avg, x.lowCut, x.highCut)];
+      doc.setDrawColor(...c); doc.setLineWidth(1.2); doc.line(px(i), py(x.p10), px(i), py(x.p90));
+      doc.setFillColor(...c); doc.circle(px(i), py(x.avg), i === n - 1 ? 1.6 : 1.2, "F");
+      if (i % every === 0 || i === n - 1) { doc.setTextColor(...C.muted); text(fmtDate(x.date), px(i), B + 4, { align: "center" }); }
+    });
+    y = B + 8;
+    para("Dot = average pitch. Bar = usual range (middle 80% of your voice). Blue = masculine, purple = androgynous, pink = feminine.", 8);
+
+    // Tips (coaching notes)
+    heading("What the data says");
+    const tagColor = { care: C.fem, focus: C.andro, good: C.masc };
+    coach(sessions).forEach(c => {
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      const lines = doc.splitTextToSize(pdfSafe(c.text), CW - 26);
+      ensure(8 + lines.length * 4.3);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(...tagColor[c.kind]);
+      text(KIND[c.kind].toUpperCase(), M, y);
+      doc.setFontSize(10); doc.setTextColor(...C.ink); text(c.title, M + 26, y); y += 4.6;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...C.muted);
+      doc.text(lines, M + 26, y); y += lines.length * 4.1 + 3.5;
+    });
+
+    // Suggestions
+    heading("Suggested plan for next week");
+    practicePlan(sessions).forEach(([k, v]) => {
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      const lines = doc.splitTextToSize(pdfSafe(v), CW - 44);
+      ensure(lines.length * 4.1 + 4);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(...C.ink); text(k, M, y);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...C.muted);
+      doc.text(lines, M + 44, y); y += lines.length * 4.1 + 3;
+    });
+
+    // Session log
+    heading("Session log");
+    doc.autoTable({
+      startY: y, margin: { left: M, right: M },
+      head: [["Date", "Practice", "Length", "Avg", "Range", "Fem", "Bright", "Clarity", "Breaks/min", "Water", "Throat", "Notes"]],
+      body: sessions.slice().reverse().map(x => [
+        fmtDate(x.date) + (x.example ? " (ex)" : "") + (x.demo ? " (demo)" : ""), x.exercise, fmtLen(x.durationS), `${x.avg}`, `${x.p10}-${x.p90}`,
+        `${x.fem}%`, x.bright ?? "-", x.clarity, x.breaksPerMin, x.water, THROAT[x.strain], x.notes || "-"
+      ].map(pdfSafe)),
+      styles: { fontSize: 7.5, cellPadding: 1.6, textColor: C.ink, lineColor: C.line, lineWidth: 0.1 },
+      headStyles: { fillColor: C.accent, textColor: [255, 255, 255], fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [248, 246, 250] },
+      columnStyles: { 0: { cellWidth: 17 }, 11: { cellWidth: 40 } }
+    });
+    y = doc.lastAutoTable.finalY + 8;
+
+    para("These numbers are estimates from a microphone, not a medical assessment. If your voice hurts, feels strained, or stays hoarse for more than two weeks, rest it and talk to a doctor or a speech-language pathologist who works with gender-affirming voice.", 8);
+
+    const pages = doc.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i); doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...C.muted);
+      text("Voice Pitch Trainer  ·  private report", M, H - 8);
+      text(`Page ${i} of ${pages}`, W - M, H - 8, { align: "right" });
+    }
+    return doc;
+  }
+
+  $("loadExamples").addEventListener("click", () => {
+    if (sessions.some(s => s.example)) { sessions = sessions.filter(s => !s.example); saveSessions(); renderReport(); reportMsg(""); return; }
+    const day = 864e5, now = Date.now();
+    const ex = [
+      [26, "Reading aloud", 148, 128, 170, 1.8, 28, 74, 70, 1.2, 0, 2, "First try. Kept sliding back down after a few words."],
+      [20, "Pitch glides (sirens)", 158, 132, 192, 2.6, 33, 76, 74, 0.8, 1, 2, "Sirens feel easier. Humming 'mm' helped find the starting note."],
+      [13, "Conversation / free speech", 167, 140, 196, 2.2, 40, 75, 61, 2.6, 0, 4, "Long call with a friend. Throat felt tight near the end."],
+      [7, "Reading aloud", 176, 152, 204, 2.9, 47, 79, 77, 0.5, 2, 2, "Took water breaks. Smiling posture made it brighter."],
+      [1, "Conversation / free speech", 184, 160, 212, 3.2, 52, 78, 75, 0.4, 1, 2, "Felt more natural. Still drops when I laugh."]
+    ].map(([ago, exercise, avg, p10, p90, sdSemi, bright, cE, cL, breaksPerMin, water, strain, notes], i) => {
+      const fem = clamp(Math.round((p90 - defaults.highCut) / (p90 - p10) * 100), 0, 100);
+      const masc = clamp(Math.round((defaults.lowCut - p10) / (p90 - p10) * 100), 0, 100);
+      return { id: "ex" + i, example: true, date: new Date(now - ago * day).toISOString(), exercise, strain, notes,
+        durationS: [480, 420, 1260, 600, 720][i], voicedS: 300, avg, median: avg, min: p10 - 15, max: p90 + 20, p10, p90, sdSemi,
+        masc, fem, andro: 100 - fem - masc, bright, clarity: Math.round((cE + cL) / 2), clarityEarly: cE, clarityLate: cL,
+        breaksPerMin, highPct: 0, water, alerts: 0, target: defaults.target, lowCut: defaults.lowCut, highCut: defaults.highCut, ceiling: defaults.ceiling };
+    });
+    sessions = [...ex, ...sessions.filter(s => !s.example)].sort((a, b) => a.date.localeCompare(b.date));
+    saveSessions(); renderReport();
+    reportMsg("Example sessions loaded. They're marked “example”. Use the same button to remove them.");
+  });
+
+  // ---------- Discord webhook (opt-in; sends only to the user's own channel) ----------
+  const dc = { url: "", summary: true, pdf: false, water: false, ...store.get("vpt-discord", {}) };
+  const DC_RE = /^https:\/\/(?:ptb\.|canary\.)?(?:discord|discordapp)\.com\/api\/webhooks\/\d+\/[\w-]+/;
+  const DC_BASE = { username: "Voice Pitch Trainer" };
+  $("dcUrl").value = dc.url; $("dcSummary").checked = dc.summary; $("dcPdf").checked = dc.pdf; $("dcWater").checked = dc.water;
+  function saveDc() { store.set("vpt-discord", dc); $("dcState").textContent = dc.url ? "Webhook connected" : "Not connected"; }
+  saveDc();
+  function dcMsg(t) { $("dcMsg").textContent = t; $("dcMsg").hidden = !t; }
+  $("dcUrl").addEventListener("change", () => {
+    dc.url = $("dcUrl").value.trim();
+    if (dc.url && !DC_RE.test(dc.url)) { dcMsg("That doesn't look like a Discord webhook link. It should start with https://discord.com/api/webhooks/"); dc.url = ""; }
+    else dcMsg(dc.url ? "Webhook link saved in this browser only. Send a test message to check it." : "");
+    saveDc();
+  });
+  for (const [id, key] of [["dcSummary", "summary"], ["dcPdf", "pdf"], ["dcWater", "water"]]) {
+    $(id).addEventListener("change", () => { dc[key] = $(id).checked; saveDc(); });
+  }
+
+  async function dcSend(payload, file) {
+    if (!DC_RE.test(dc.url)) throw new Error("Add your webhook link first.");
+    const opts = { method: "POST" };
+    if (file) {
+      const fd = new FormData();
+      fd.append("payload_json", JSON.stringify(payload));
+      fd.append("files[0]", file.blob, file.name);
+      opts.body = fd;
+    } else {
+      opts.headers = { "Content-Type": "application/json" };
+      opts.body = JSON.stringify(payload);
+    }
+    let r;
+    try { r = await fetch(dc.url, opts); } catch (e) { throw new Error("Couldn't reach Discord. Check your internet connection."); }
+    if (r.status === 404) throw new Error("Discord says this webhook no longer exists. Create a new one and paste the link again.");
+    if (r.status === 429) throw new Error("Discord asked to slow down. Try again in a minute.");
+    if (!r.ok) throw new Error(`Discord refused the message (error ${r.status}).`);
+  }
+  function summaryEmbed(s) {
+    const tips = coach(sessions).slice(0, 3).map(c => `**${KIND[c.kind]}:** ${c.title}`).join("\n");
+    return {
+      title: `Practice session · ${fmtDate(s.date)}${s.demo ? " (demo voice)" : ""}${s.example ? " (example)" : ""}`,
+      color: 0xC2417A,
+      fields: [
+        { name: "Average", value: `${s.avg} Hz (${noteName(s.avg)})`, inline: true },
+        { name: "Usual range", value: `${s.p10}–${s.p90} Hz`, inline: true },
+        { name: "Feminine range", value: `${s.fem}% of the time`, inline: true },
+        { name: "Brightness", value: s.bright == null ? "—" : `${s.bright}/100`, inline: true },
+        { name: "Clarity", value: `${s.clarityEarly} → ${s.clarityLate}`, inline: true },
+        { name: "Voice breaks", value: `${s.breaksPerMin}/min`, inline: true },
+        { name: "Practice", value: `${s.exercise}, ${fmtLen(s.durationS)}`, inline: true },
+        { name: "Water breaks", value: String(s.water), inline: true },
+        { name: "Throat", value: THROAT[s.strain] || "—", inline: true },
+        ...(s.notes ? [{ name: "Notes", value: s.notes.slice(0, 1000) }] : []),
+        ...(tips ? [{ name: "Coaching", value: tips }] : [])
+      ],
+      footer: { text: `Target ${s.target} Hz · sent from your Voice Pitch Trainer` }
+    };
+  }
+  async function dcSendReport(s) {
+    const file = dc.pdf && window.jspdf?.jsPDF
+      ? { blob: buildPdf().output("blob"), name: `voice-report-${new Date().toISOString().slice(0, 10)}.pdf` } : null;
+    await dcSend({ ...DC_BASE, embeds: [summaryEmbed(s)] }, file);
+  }
+  $("dcTest").addEventListener("click", async () => {
+    dcMsg("Sending…");
+    try { await dcSend({ ...DC_BASE, content: "👋 Test from your Voice Pitch Trainer. Session summaries and reminders will show up here." }); dcMsg("Test message sent. Check your Discord channel."); }
+    catch (e) { dcMsg(e.message); }
+  });
+  $("dcSendNow").addEventListener("click", async () => {
+    if (!sessions.length) return dcMsg("Save a session first (or load the examples), then send.");
+    dcMsg("Sending…");
+    try { await dcSendReport(sessions[sessions.length - 1]); dcMsg(`Latest session sent${dc.pdf ? " with the PDF report" : ""}.`); }
+    catch (e) { dcMsg(e.message); }
+  });
+  $("dcForget").addEventListener("click", () => {
+    dc.url = ""; $("dcUrl").value = ""; saveDc(); dcMsg("Webhook link removed from this browser.");
+  });
+
+  // ---------- Reading practice ----------
+  const SCRIPTS = {
+    fem: [
+      { title: "Bright morning", focus: "Light, forward vowels. Keep each sentence up from the first word to the last.", text: [
+        "Each week I meet Lily at the little bakery on Green Street.",
+        "She sees me and waves, and we sit by the window with sweet tea.",
+        "Isn't it easy to feel happy on a day like this?",
+        "We talk about the weekend, the film we missed, and the trip we keep planning.",
+        "When it's time to leave, she hugs me and says, see you Thursday!"] },
+      { title: "Questions and lifts", focus: "Melody. Let questions rise at the end and stress words with a lift, not volume.", text: [
+        "Have you ever tried the new place downtown?",
+        "Really? I heard the noodles are amazing!",
+        "Would you like to go on Friday, or is Saturday better?",
+        "Oh, that sounds lovely. I'll bring my sister, if that's okay.",
+        "She's been wanting to meet you for ages!"] },
+      { title: "Phone call", focus: "Everyday speech. Phone calls are where pitch tends to drop, so hold it steady.", text: [
+        "Hi, this is Jamie calling about my appointment on Tuesday.",
+        "I was hoping to move it to a little later in the afternoon, if possible.",
+        "Any time after three would be perfect for me.",
+        "Thank you so much, I really appreciate your help.",
+        "Have a wonderful day!"] }
+    ],
+    masc: [
+      { title: "Steady and grounded", focus: "Open, relaxed vowels. Speak from the chest and keep a steady, level line.", text: [
+        "The old road runs north along the river, past the stone bridge and the mill.",
+        "Most mornings I walk it slowly, coffee in hand, before work.",
+        "The fog sits low over the water and the town is quiet.",
+        "By the time I reach the bridge, the sun is up and the boats are out.",
+        "It's a good way to start the day."] },
+      { title: "Statements", focus: "Falling endings. Let every sentence land and settle at the end.", text: [
+        "I'll handle the order today.",
+        "Put the boxes by the back door.",
+        "We open at nine, so we've got about an hour.",
+        "Call me if the truck runs late.",
+        "Thanks. That's all for now."] },
+      { title: "Phone call", focus: "Everyday speech. Keep the pitch settled even when you're polite or friendly.", text: [
+        "Hi, this is Jordan, calling about the car.",
+        "I dropped it off on Monday for a brake check.",
+        "Could you tell me when it'll be ready?",
+        "Tomorrow works for me. I can come by around four.",
+        "Great. Talk to you then."] }
+    ]
+  };
+  const rdPrefs = { mode: "fem", mascTarget: 120, exact: false, script: 0, ...store.get("vpt-reader", {}) };
+  const saveRd = () => store.set("vpt-reader", rdPrefs);
+  const rd = { on: false, words: [], sents: [], cur: 0, pending: [], syl: 0, points: [], recStart: 0, recog: null };
+  const env = { v: 0, max: 0, min: 0, up: true, last: 0, quiet: 0 };
+  const st = (a, b) => 12 * Math.log2(a / b);
+  const rdTarget = () => rdPrefs.mode === "fem" ? cfg.target : rdPrefs.mascTarget;
+  const goodZone = () => rdPrefs.mode === "fem" ? "fem" : "masc";
+  const normWord = w => w.toLowerCase().replace(/[^a-z0-9]/g, "");
+  function syllables(w) {
+    w = normWord(w).replace(/[0-9]/g, "");
+    if (!w) return 0;
+    if (w.length <= 3) return 1;
+    w = w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, "").replace(/^y/, "");
+    const m = w.match(/[aeiouy]{1,2}/g);
+    return Math.max(1, m ? m.length : 1);
+  }
+
+  function renderModeUI() {
+    const fem = rdPrefs.mode === "fem";
+    $("modeFem").setAttribute("aria-pressed", fem); $("modeMasc").setAttribute("aria-pressed", !fem);
+    $("reader").classList.toggle("fem-mode", fem);
+    $("scriptSel").innerHTML = SCRIPTS[rdPrefs.mode].map((s, i) => `<option value="${i}">${esc(s.title)}</option>`).join("");
+    rdPrefs.script = Math.min(rdPrefs.script, SCRIPTS[rdPrefs.mode].length - 1);
+    $("scriptSel").value = rdPrefs.script;
+    $("readTarget").value = rdTarget();
+    $("exactWords").checked = rdPrefs.exact;
+    loadScript();
+  }
+  function loadScript() {
+    const sc = SCRIPTS[rdPrefs.mode][rdPrefs.script];
+    $("scriptFocus").textContent = "Focus: " + sc.focus;
+    rd.words = []; rd.sents = [];
+    let html = "";
+    sc.text.forEach((sentence, si) => {
+      const first = rd.words.length;
+      html += `<span class="sent">` + sentence.split(/\s+/).map(tok => {
+        const i = rd.words.length, n = syllables(tok);
+        const prevEnd = i ? rd.words[i - 1].sylEnd : 0;
+        rd.words.push({ text: tok, si, fs: [], bs: [], sylStart: prevEnd, sylEnd: prevEnd + n });
+        return `<span class="w" data-i="${i}">${esc(tok)}</span>`;
+      }).join(" ") + "</span> ";
+      rd.sents.push({ first, last: rd.words.length - 1, question: /\?\s*$/.test(sentence), done: false });
+    });
+    $("scriptText").innerHTML = html;
+    resetReading();
+  }
+  function resetReading() {
+    stopReading(false);
+    rd.cur = 0; rd.pending = []; rd.syl = 0; rd.points = []; rd.recStart = 0;
+    rd.words.forEach(w => { w.fs = []; w.bs = []; });
+    rd.sents.forEach(s => { s.done = false; });
+    $("scriptText").querySelectorAll(".w").forEach(el => { el.className = "w"; });
+    $("scriptText").scrollTop = 0;
+    markCurrent();
+    renderPointers();
+    $("rLiveHz").textContent = "—"; setCue("Press Start reading, then read aloud", "");
+  }
+  const wordEl = i => $("scriptText").querySelector(`.w[data-i="${i}"]`);
+  function markCurrent() {
+    $("scriptText").querySelectorAll(".w.cur").forEach(el => el.classList.remove("cur"));
+    const el = wordEl(rd.cur);
+    if (!el) return;
+    el.classList.add("cur");
+    const box = $("scriptText"), top = el.offsetTop - box.offsetTop;
+    if (top < box.scrollTop + 10 || top > box.scrollTop + box.clientHeight - 40) box.scrollTop = Math.max(0, top - box.clientHeight / 3);
+  }
+  function setCue(text, kind) { $("rLiveCue").textContent = text; $("rLiveCue").className = "r-cue " + (kind || ""); }
+
+  // Move the reading position to word `to`, giving the pitch heard since the last move to the words passed
+  function advanceTo(to) {
+    to = Math.min(to, rd.words.length);
+    const n = to - rd.cur;
+    if (n <= 0) return;
+    const per = Math.ceil(rd.pending.length / n);
+    for (let k = 0; k < n; k++) {
+      const w = rd.words[rd.cur + k], chunk = rd.pending.slice(k * per, (k + 1) * per);
+      w.fs.push(...chunk.map(x => x.f)); w.bs.push(...chunk.filter(x => x.b != null).map(x => x.b));
+      colorWord(rd.cur + k);
+    }
+    rd.pending = [];
+    const from = rd.cur;
+    rd.cur = to;
+    for (let si = rd.words[from].si; si < rd.sents.length; si++) {
+      if (rd.sents[si].last < to && !rd.sents[si].done) finishSentence(si);
+    }
+    markCurrent();
+    if (rd.cur >= rd.words.length) finishReading();
+  }
+  function colorWord(i) {
+    const w = rd.words[i], el = wordEl(i);
+    if (!el) return;
+    el.classList.remove("z-masc", "z-andro", "z-fem", "unheard");
+    if (w.fs.length < 2) { el.classList.add("unheard"); return; }
+    el.classList.add("z-" + zoneOf(mean(w.fs)));
+  }
+
+  function readerFrame(now, dt, f, b, rms) {
+    if (f) {
+      rd.pending.push({ f, b });
+      const z = zoneOf(f), fem = rdPrefs.mode === "fem";
+      $("rLiveHz").textContent = Math.round(f);
+      if (fem) {
+        if (f > cfg.ceiling) setCue("Ease down a little ↓", "off");
+        else if (z === "fem") setCue("On target ✓", "good");
+        else if (z === "andro") setCue("Almost, lift a little ↑", "near");
+        else setCue("Lift ↑", "off");
+      } else {
+        if (f < 80) setCue("Too low, ease up ↑", "off");
+        else if (z === "masc") setCue("On target ✓", "good");
+        else if (z === "andro") setCue("Almost, settle lower ↓", "near");
+        else setCue("Lower ↓", "off");
+      }
+    } else $("rLiveHz").textContent = "—";
+    if (rdPrefs.exact && rd.recog) return;          // speech recognition moves the position
+
+    // Rhythm tracking: count syllable pulses in the loudness envelope
+    const floor = Number(cfg.gate) * 1.5;
+    env.v = env.v * 0.5 + rms * 0.5;
+    if (env.v < floor) env.quiet += dt; else env.quiet = 0;
+    if (env.up) {
+      env.max = Math.max(env.max, env.v);
+      if (env.max > floor && env.v < env.max * 0.7 && now - env.last > 110) { env.up = false; env.min = env.v; env.last = now; onSyllable(); }
+    } else {
+      env.min = Math.min(env.min, env.v);
+      if (env.v > floor && env.v > env.min * 1.35) { env.up = true; env.max = env.v; }
+    }
+    // A pause near the end of a sentence means it's finished
+    if (env.quiet > 650 && rd.cur < rd.words.length) {
+      const s = rd.sents[rd.words[rd.cur].si];
+      if (rd.cur > s.first && s.last - rd.cur <= 1) {
+        advanceTo(s.last + 1);
+        if (rd.cur < rd.words.length) rd.syl = rd.words[rd.cur].sylStart;
+      }
+      env.quiet = -100000;                          // only once per pause
+    }
+  }
+  function onSyllable() {
+    rd.syl++;
+    let to = rd.cur;
+    while (to < rd.words.length && rd.syl >= rd.words[to].sylEnd) to++;
+    // wait for a pause before moving into the next sentence, unless the reader is clearly well past it
+    if (to < rd.words.length && rd.cur < rd.words.length) {
+      const last = rd.sents[rd.words[rd.cur].si].last;
+      if (rd.syl < rd.words[last].sylEnd + 3) to = Math.min(to, last);
+    }
+    if (to > rd.cur) advanceTo(to);
+  }
+
+  // Exact word tracking with the browser's speech recognition (optional)
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  async function startRecognition() {
+    if (!SR) {
+      rdPrefs.exact = false; saveRd(); $("exactWords").checked = false;
+      $("exactNote").textContent = "This browser can't recognize words, so the window follows your speaking rhythm instead.";
+      return;
+    }
+    let local = false;
+    try { if (SR.available) local = (await SR.available({ langs: ["en-US"], processLocally: true })) === "available"; } catch (e) {}
+    const r = new SR();
+    r.lang = "en-US"; r.continuous = true; r.interimResults = true;
+    if (local) { try { r.processLocally = true; } catch (e) {} }
+    $("exactNote").textContent = local ? "Word recognition is running on this device." : "Word recognition is on. Your browser may send audio to its speech service to recognize the words.";
+    r.onresult = e => {
+      let heard = [];
+      for (let i = 0; i < e.results.length; i++) heard = heard.concat(e.results[i][0].transcript.split(/\s+/).map(normWord).filter(Boolean));
+      let pos = rd.recStart;
+      for (const h of heard) {
+        for (let k = pos; k < Math.min(rd.words.length, pos + 5); k++) {
+          const w = normWord(rd.words[k].text);
+          if (w === h || (w.length > 3 && h.length > 3 && w.slice(0, 4) === h.slice(0, 4))) { pos = k + 1; break; }
+        }
+      }
+      if (pos > rd.cur) advanceTo(pos);
+    };
+    r.onerror = e => {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        rd.recog = null; $("exactNote").textContent = "Word recognition was blocked, so the window follows your speaking rhythm instead.";
+      }
+    };
+    r.onend = () => { if (rd.on && rd.recog === r) { rd.recStart = rd.cur; try { r.start(); } catch (e) {} } };
+    rd.recog = r; rd.recStart = rd.cur;
+    try { r.start(); } catch (e) { rd.recog = null; }
+  }
+
+  // ---------- Pointers ----------
+  function addPoint(tag, kind, text) { rd.points.unshift({ tag, kind, text }); renderPointers(); }
+  function renderPointers() {
+    $("pointers").innerHTML = rd.points.length
+      ? rd.points.map(p => `<li><span class="ptag ${p.kind}">${esc(p.tag)}</span><span>${esc(p.text)}</span></li>`).join("")
+      : `<li class="empty-p">Pointers appear here after each sentence.</li>`;
+  }
+  function finishSentence(si) {
+    const s = rd.sents[si]; s.done = true;
+    const ws = rd.words.slice(s.first, s.last + 1), fs = ws.flatMap(w => w.fs), bs = ws.flatMap(w => w.bs);
+    const tag = "S" + (si + 1);
+    if (fs.length < 8) { addPoint(tag, "focus", `I couldn't hear sentence ${si + 1} clearly. Speak a little louder or move closer to the mic.`); return; }
+    const avg = Math.round(mean(fs)), sorted = [...fs].sort((a, b) => a - b);
+    const range = Math.round(st(sorted[Math.floor(sorted.length * 0.9)], sorted[Math.floor(sorted.length * 0.1)]) * 10) / 10;
+    const voiced = ws.filter(w => w.fs.length >= 2), lastW = voiced[voiced.length - 1];
+    const lastAvg = lastW ? mean(lastW.fs) : avg, endShift = st(lastAvg, avg);
+    const key = ws.reduce((a, w) => normWord(w.text).length > normWord(a.text).length ? w : a, ws[0]).text.replace(/[^\w']/g, "");
+    const lastTxt = lastW ? lastW.text.replace(/[^\w']/g, "") : "";
+    const bright = bs.length ? mean(bs) : null;
+    const good = Math.round(voiced.filter(w => zoneOf(mean(w.fs)) === goodZone()).length / Math.max(1, voiced.length) * 100);
+    const T = rdTarget(), tips = [];
+    if (rdPrefs.mode === "fem") {
+      if (avg > cfg.ceiling) tips.push(["care", `Sentence ${si + 1} ran high (${avg} Hz). Higher isn't always better. Settle closer to ${T} Hz and keep your throat loose.`]);
+      if (avg < cfg.lowCut) tips.push(["focus", `Sentence ${si + 1} sat at ${avg} Hz, in the masculine range. Hum "mm" on ${noteName(T)} first and start the first word from there.`]);
+      else if (avg < cfg.highCut) tips.push(["focus", `Sentence ${si + 1} was ${avg} Hz, close to the feminine range. Lift the first word a little and hold it there.`]);
+      if (s.question && endShift <= 0.5) tips.push(["focus", `"${lastTxt}" ends a question, but your pitch didn't rise. Let the last word lift.`]);
+      else if (!s.question && endShift < -2) tips.push(["focus", `Your pitch dropped on "${lastTxt}". Keep air flowing and hold the last word up.`]);
+      if (range < 3) tips.push(["focus", `That sentence was fairly flat (about ${range} semitones). Give "${key}" a little lift for more melody.`]);
+      if (bright != null && bright < 0.35) tips.push(["focus", `Resonance sounded dark. Smile slightly and keep vowels small and forward, like "ee".`]);
+    } else {
+      if (avg < 80) tips.push(["care", `Sentence ${si + 1} went very low (${avg} Hz). Don't press your voice down; that strains it. Find a comfortable floor.`]);
+      if (avg >= cfg.highCut) tips.push(["focus", `Sentence ${si + 1} sat at ${avg} Hz, in the feminine range. Relax your throat, like the start of a gentle yawn, and let it settle toward ${T} Hz.`]);
+      else if (avg >= cfg.lowCut) tips.push(["focus", `Sentence ${si + 1} was ${avg} Hz, in between. Let it settle a little lower and feel it in your chest.`]);
+      if (!s.question && endShift > 2) tips.push(["focus", `Your pitch rose on "${lastTxt}". For a grounded sound, let statements fall at the end.`]);
+      if (range > 7) tips.push(["focus", `Lots of pitch movement (about ${range} semitones). A steadier line sounds more masculine. Stress words with volume instead of pitch.`]);
+      if (bright != null && bright > 0.6) tips.push(["focus", `Resonance sounded bright. Open your throat and use a taller, darker "oh" space.`]);
+    }
+    if (!tips.length) tips.push(["good", `Sentence ${si + 1}: ${avg} Hz (${noteName(avg)}), ${good}% of words in the ${goodZone() === "fem" ? "feminine" : "masculine"} range. Nice.`]);
+    tips.slice(0, 2).reverse().forEach(([kind, text]) => addPoint(tag, kind, text));
+  }
+
+  function finishReading() {
+    const heard = rd.words.filter(w => w.fs.length >= 2);
+    stopReading(true);
+    if (!heard.length) return;
+    const all = heard.flatMap(w => w.fs), avg = Math.round(mean(all));
+    const good = Math.round(heard.filter(w => zoneOf(mean(w.fs)) === goodZone()).length / heard.length * 100);
+    const zoneName = goodZone() === "fem" ? "feminine" : "masculine";
+    const focusCount = rd.points.filter(p => p.kind !== "good").length;
+    addPoint("Done", good >= 70 ? "good" : "focus",
+      `Average ${avg} Hz (${noteName(avg)}) against a target of ${rdTarget()} Hz. ${good}% of words were in the ${zoneName} range. ` +
+      (good >= 70 ? "Try a harder script next, or read this one faster and more casually." :
+        focusCount ? "Read it once more and work on the first pointer below before moving on." : "Read it again a little slower, one sentence at a time."));
+  }
+
+  function stopReading(finished) {
+    if (rd.recog) { const r = rd.recog; rd.recog = null; try { r.stop(); } catch (e) {} }
+    if (!rd.on) return;
+    rd.on = false;
+    if (!finished && rd.pending.length && rd.cur < rd.words.length) {
+      const w = rd.words[rd.cur]; w.fs.push(...rd.pending.map(x => x.f)); rd.pending = []; colorWord(rd.cur);
+    }
+    $("readStart").textContent = finished ? "Read again" : "Start reading";
+    if (finished) setCue("Finished. See your pointers below.", "");
+  }
+
+  $("readBtn").addEventListener("click", () => {
+    const d = $("reader");
+    if (d.open) { d.close(); return; }
+    d.show();
+  });
+  $("readerClose").addEventListener("click", () => $("reader").close());
+  $("reader").addEventListener("close", () => stopReading(false));
+  $("modeFem").addEventListener("click", () => { rdPrefs.mode = "fem"; rdPrefs.script = 0; saveRd(); renderModeUI(); });
+  $("modeMasc").addEventListener("click", () => { rdPrefs.mode = "masc"; rdPrefs.script = 0; saveRd(); renderModeUI(); });
+  $("scriptSel").addEventListener("change", () => { rdPrefs.script = Number($("scriptSel").value); saveRd(); loadScript(); });
+  $("readTarget").addEventListener("change", () => {
+    const v = Number($("readTarget").value);
+    if (rdPrefs.mode === "fem") { cfg.target = v; $("target").value = v; store.set("vpt-settings", cfg); renderReport(); }
+    else { rdPrefs.mascTarget = v; saveRd(); }
+  });
+  $("exactWords").addEventListener("change", () => {
+    rdPrefs.exact = $("exactWords").checked; saveRd();
+    if (rd.on) { if (rdPrefs.exact) startRecognition(); else if (rd.recog) { const r = rd.recog; rd.recog = null; try { r.stop(); } catch (e) {} } }
+  });
+  $("scriptText").addEventListener("click", e => {
+    const el = e.target.closest(".w");
+    if (!el) return;
+    const i = Number(el.dataset.i);
+    rd.pending = []; rd.cur = i; rd.syl = rd.words[i].sylStart; rd.recStart = i;
+    markCurrent();
+  });
+  $("readStart").addEventListener("click", async () => {
+    if (rd.on) { stopReading(false); setCue("Paused. Press Start reading to continue.", ""); return; }
+    if (rd.cur >= rd.words.length) resetReading();
+    if (!running) await start();
+    if (!running) return;
+    rd.on = true; rd.pending = [];
+    Object.assign(env, { v: 0, max: 0, min: 0, up: true, last: 0, quiet: 0 });
+    $("readStart").textContent = "Pause";
+    setCue(demo ? "Demo voice is reading. Start the microphone to read yourself." : "Read aloud at a relaxed pace", "");
+    if (rdPrefs.exact && !demo) startRecognition();
+  });
+  $("readRestart").addEventListener("click", () => resetReading());
+  renderModeUI();
+
+  window.addEventListener("resize", () => { drawTrace(); if (sessions.length) drawProgress(); });
+  drawTrace();
+  renderReport();
+  startDemo();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+# One domain, routed by path. HTTPS is required: browsers only allow the microphone on https:// pages (or localhost).
+# Assumes ingress-nginx and cert-manager with a ClusterIssuer named letsencrypt.
+# Change the host (both places) to your own domain. To add an app, add a path entry pointing at its Service.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: website
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [example.com]
+      secretName: website-tls
+  rules:
+    - host: example.com
+      http:
+        paths:
+          # More specific paths first; "/" catches everything else
+          - path: /voice
+            pathType: Prefix
+            backend:
+              service:
+                name: trainer
+                port: { name: http }
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: homepage
+                port: { name: http }

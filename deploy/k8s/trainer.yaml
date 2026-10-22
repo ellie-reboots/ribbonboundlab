@@ -1,0 +1,94 @@
+# Voice Pitch Trainer at /voice/ : stock nginx image + the page from a ConfigMap
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trainer
+  labels: { app: trainer }
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels: { app: trainer }
+  strategy:
+    rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }
+  template:
+    metadata:
+      labels: { app: trainer }
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile: { type: RuntimeDefault }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app: trainer }
+      containers:
+        - name: web
+          image: nginxinc/nginx-unprivileged:1.27-alpine   # stock image; runs as uid 101 on port 8080
+          ports:
+            - { name: http, containerPort: 8080 }
+          resources:
+            requests: { cpu: 20m, memory: 24Mi }
+            limits: { cpu: 250m, memory: 64Mi }
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+            - { name: site, mountPath: /usr/share/nginx/html/voice, readOnly: true }
+            - { name: nginx-conf, mountPath: /etc/nginx/conf.d, readOnly: true }
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: site
+          configMap: { name: trainer-site }
+        - name: nginx-conf
+          configMap: { name: trainer-nginx }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trainer
+  labels: { app: trainer }
+spec:
+  selector: { app: trainer }
+  ports:
+    - { name: http, port: 80, targetPort: http }
+---
+# Needs metrics-server in the cluster (kubectl top pods should work)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: trainer
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: trainer }
+  minReplicas: 2
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 60 }
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 120
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: trainer
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: { app: trainer }

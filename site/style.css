@@ -17,6 +17,8 @@ h1 span { color: var(--accent); }
   border-radius: 28px;
 }
 
+.secret { cursor: default; }
+
 /* Section pages: mini logo in the top-left corner, links home */
 body.section { padding-top: 6rem; }
 .corner-logo {

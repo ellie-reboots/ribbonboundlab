@@ -10,7 +10,7 @@
 <body>
   <main>
     <h1><img class="logo" src="logo.webp" alt="Ribbon Bound Lab" width="1254" height="1254"></h1>
-    <p>Pup, fox, vtuber-in-progress and homelab tinkerer.<br>Self-hosted with love on Kubernetes. 🎀🐾</p>
+    <p>Pup, fox, vtuber-in-progress and homelab tinkerer.<br>Self-hosted with love on Kubernetes. <span class="secret" id="bow">🎀</span>🐾</p>
     <nav>
       <a href="about.html">About me</a>
       <a href="streams.html">Streams</a>
@@ -18,5 +18,12 @@
       <a href="lab.html">Lab</a>
     </nav>
   </main>
+  <script>
+    // The bow is a secret door. No href and an encoded path, so crawlers
+    // never see a link to follow.
+    document.getElementById("bow").addEventListener("click", () => {
+      location.href = atob("L2FmdGVyZGFyay5odG1s");
+    });
+  </script>
 </body>
 </html>

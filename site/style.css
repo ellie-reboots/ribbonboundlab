@@ -130,6 +130,25 @@ figure.veiled figcaption { visibility: hidden; }
 .kinks .card p { margin: 0 0 .6rem; font-size: .92rem; }
 .kinks .card .safe { margin: 0; font-size: .85rem; }
 .kinks .card .source { font-size: .8rem; font-style: italic; }
+.primer {
+  margin: 0 0 2rem; padding: 1.25rem 1.5rem; border-radius: 20px;
+  border: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.primer h3 { margin: 0 0 .5rem; font-size: 1.15rem; color: var(--fg); }
+.primer dl { display: grid; grid-template-columns: max-content 1fr; gap: .4rem 1rem; margin: 1rem 0; }
+.primer dt { font-weight: 600; color: var(--accent); }
+.primer dd { margin: 0; color: var(--muted); font-size: .92rem; line-height: 1.5; }
+.primer strong { color: var(--fg); }
+@media (max-width: 520px) {
+  .primer dl { grid-template-columns: 1fr; gap: .1rem; }
+  .primer dd { margin-bottom: .5rem; }
+}
+.kinks .more { margin: 0 0 .75rem; }
+.kinks .more summary {
+  cursor: pointer; font-size: .85rem; font-weight: 600; color: var(--accent);
+}
+.kinks .more p { font-size: .88rem; margin: .5rem 0 0; }
+.kinks .more strong { color: var(--fg); }
 .kinks .card .source a { color: var(--accent); }
 .kinks figure { margin: 0 0 .75rem; }
 .kinks figure img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 12px; display: block; }

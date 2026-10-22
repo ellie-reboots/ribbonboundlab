@@ -108,6 +108,13 @@ main.about-pop { max-width: 52rem; width: 100%; text-align: left; }
   border-color: color-mix(in srgb, #5bcefa 45%, transparent);
 }
 .about-pop > p { color: var(--muted); }
+.region-note {
+  margin: 0 0 1rem; padding: 1rem 1.25rem; border-radius: 16px; color: var(--muted);
+  background: color-mix(in srgb, #5bcefa 12%, transparent);
+  border: 2px solid color-mix(in srgb, #5bcefa 45%, transparent);
+}
+.region-note strong { display: block; color: var(--fg); margin-bottom: .25rem; }
+.region-note a { color: var(--accent); }
 .about-pop .goals a, .about-pop .panel a { color: var(--accent); }
 .fact-groups .facts h3 { font-size: .98rem; }
 .hero .hello { margin: 0; font-size: 1rem; }

@@ -117,6 +117,7 @@ main.about-pop { max-width: 52rem; width: 100%; text-align: left; }
 .region-note a { color: var(--accent); }
 .about-pop .card.rig { text-align: left; }
 .card.rig h2 { margin: 0 0 .25rem; font-size: 1.15rem; display: flex; align-items: center; gap: .5rem; }
+.card.rig strong { color: var(--fg); }
 .about-pop > p strong { color: var(--accent); }
 .about-pop > p.joke { font-style: italic; margin-top: -.25rem; }
 .about-pop > p.joke em { color: var(--accent); }

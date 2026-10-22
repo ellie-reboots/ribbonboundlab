@@ -50,7 +50,7 @@ body {
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 20px; }
+.app { max-width: 1680px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
 header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 h1 { font: 700 1.6rem/1.1 var(--font-display); margin: 0; text-wrap: balance; }
 h2 { font: 600 .75rem/1 var(--font-body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 12px; }
@@ -208,15 +208,62 @@ label.check input { width: auto; accent-color: var(--accent); }
 .tips { color: var(--muted); font-size: .9rem; max-width: 70ch; }
 .tips p { margin: 0 0 8px; }
 .err { color: var(--fem); font-weight: 500; }
+/* ---------- One-screen tile layout ----------
+   phone: tiles stack · 760px+: two columns · 1180px+: everything fits the window,
+   the pitch chart takes the spare height and the tools tile scrolls on its own */
+body { padding-block: 12px; }
+.topbar h1 { font-size: 1.35rem; }
+.topbar .sub, .topbar .err { margin: 2px 0 0; font-size: .85rem; }
+.tiles { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+.tile { padding: 16px; min-width: 0; min-height: 0; }
+.t-live { gap: 16px; }
+.t-trace { display: flex; flex-direction: column; }
+.trace-wrap { position: relative; height: 240px; }
+.trace-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.care-msg { font-size: .9rem; margin-bottom: 12px; }
+.t-side { display: flex; flex-direction: column; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; padding-bottom: 10px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+.tab { padding: 6px 12px; font-size: .85rem; border-color: transparent; background: transparent; color: var(--muted); }
+.tab:hover { color: var(--fg); background: var(--bg); }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tab-body { min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.t-side .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.report-body { grid-template-columns: minmax(0, 1fr); }
+.tips { max-width: none; }
+.water {
+  position: fixed; z-index: 30; left: 50%; transform: translateX(-50%);
+  top: max(12px, env(safe-area-inset-top, 0px)); width: max-content; max-width: calc(100vw - 32px);
+  background: var(--surface); border-left-width: 6px; box-shadow: 0 10px 30px rgba(20, 10, 30, .22);
+}
+@media (min-width: 760px) {
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "live live" "care session" "trace trace" "side side"; }
+  .t-live { grid-area: live; } .t-care { grid-area: care; } .t-session { grid-area: session; }
+  .t-trace { grid-area: trace; } .t-side { grid-area: side; max-height: 80vh; }
+  .t-care .care-grid, .t-session .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1180px) {
+  html, body { height: 100%; }
+  .app { height: 100%; }
+  .tiles {
+    flex: 1; min-height: 600px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(360px, .9fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: "live live side" "trace trace side" "care session side";
+  }
+  .t-side { max-height: none; }
+  .trace-wrap { flex: 1; height: auto; min-height: 120px; }
+}
 @media (prefers-reduced-motion: reduce) { .marker, .meter span { transition: none; } .rec-status.on::before { animation: none; } }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
+<div class="app">
+  <header class="topbar">
     <div>
       <h1>Voice Pitch Trainer</h1>
       <p class="sub">Live pitch, resonance and voice range. Audio and data stay on your computer.</p>
+      <p id="error" class="err" hidden></p>
+      <p id="demoNote" class="sub">Showing a simulated demo voice. Press Start microphone to use your own.</p>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button id="reset">Reset stats</button>
@@ -226,10 +273,9 @@ label.check input { width: auto; accent-color: var(--accent); }
       <button id="start" class="primary">Start microphone</button>
     </div>
   </header>
-  <p id="error" class="err" hidden></p>
-  <p id="demoNote" class="sub">Showing a simulated demo voice. Press Start microphone to use your own.</p>
 
-  <section class="panel live">
+  <main class="tiles">
+  <section class="panel tile t-live live">
     <div class="readout">
       <h2>Current pitch</h2>
       <div class="big-row">
@@ -294,7 +340,7 @@ label.check input { width: auto; accent-color: var(--accent); }
     <button id="waterDone" class="primary">Done, I drank some</button>
   </div>
 
-  <section class="panel care">
+  <section class="panel tile t-care care">
     <div class="sec-head">
       <h2>Voice care</h2>
       <span class="care-pill ok" id="careLevel">Relaxed</span>
@@ -308,12 +354,12 @@ label.check input { width: auto; accent-color: var(--accent); }
     </div>
   </section>
 
-  <section class="panel">
+  <section class="panel tile t-trace">
     <h2>Pitch over the last <span id="secLabel">15</span> seconds</h2>
     <div class="trace-wrap"><canvas id="trace"></canvas></div>
   </section>
 
-  <section class="panel">
+  <section class="panel tile t-session">
     <h2>This session</h2>
     <div class="stats">
       <div class="stat"><span class="k">Average pitch</span><span class="v" id="avg">—</span></div>
@@ -329,7 +375,16 @@ label.check input { width: auto; accent-color: var(--accent); }
     </div>
   </section>
 
-  <section class="panel" id="practice">
+  <section class="panel tile t-side">
+    <div class="tabs" role="tablist" aria-label="Tools">
+      <button class="tab" role="tab" id="tabBtn-practice" aria-controls="tab-practice" aria-selected="true">Practice</button>
+      <button class="tab" role="tab" id="tabBtn-report" aria-controls="tab-report" aria-selected="false">Report</button>
+      <button class="tab" role="tab" id="tabBtn-discord" aria-controls="tab-discord" aria-selected="false">Discord</button>
+      <button class="tab" role="tab" id="tabBtn-settings" aria-controls="tab-settings" aria-selected="false">Settings</button>
+      <button class="tab" role="tab" id="tabBtn-tips" aria-controls="tab-tips" aria-selected="false">Tips</button>
+    </div>
+    <div class="tab-body">
+    <div id="tab-practice" role="tabpanel" aria-labelledby="tabBtn-practice">
     <div class="sec-head">
       <h2>Practice session</h2>
       <span class="rec-status" id="recStatus">Not recording</span>
@@ -362,9 +417,10 @@ label.check input { width: auto; accent-color: var(--accent); }
       <button id="recBtn" class="primary">Start recording session</button>
       <button id="recCancel" hidden>Discard</button>
     </div>
-  </section>
+    <p class="sub small">Recorded sessions build your progress report in the Report tab. For guided reading with pointers, use Reading practice at the top.</p>
+    </div>
 
-  <section class="panel" id="report">
+    <div id="tab-report" role="tabpanel" aria-labelledby="tabBtn-report" hidden>
     <div class="sec-head">
       <h2>Progress report</h2>
       <div class="row-btns">
@@ -375,7 +431,7 @@ label.check input { width: auto; accent-color: var(--accent); }
     </div>
     <p class="sub small">Private by design: sessions are saved only in this browser on this computer. Nothing is uploaded. Reports are made on your device and are yours to keep or share.</p>
     <p id="reportMsg" class="sub" hidden></p>
-    <div id="reportEmpty" class="empty">No sessions saved yet. Record a practice session above, or load example sessions to see what a report looks like.</div>
+    <div id="reportEmpty" class="empty">No sessions saved yet. Record one in the Practice tab, or load example sessions to see what a report looks like.</div>
     <div id="reportBody" class="report-body" hidden>
       <div class="stats">
         <div class="stat"><span class="k">Sessions</span><span class="v" id="rCount">—</span></div>
@@ -406,9 +462,9 @@ label.check input { width: auto; accent-color: var(--accent); }
         <span id="clearConfirm" hidden>Delete every saved session? <button id="clearYes" class="danger">Yes, delete all</button> <button id="clearNo">Keep them</button></span>
       </div>
     </div>
-  </section>
+    </div>
 
-  <section class="panel" id="discord">
+    <div id="tab-discord" role="tabpanel" aria-labelledby="tabBtn-discord" hidden>
     <div class="sec-head">
       <h2>Discord</h2>
       <span class="rec-status" id="dcState">Not connected</span>
@@ -426,9 +482,9 @@ label.check input { width: auto; accent-color: var(--accent); }
       <button id="dcForget">Remove link</button>
     </div>
     <p id="dcMsg" class="sub" hidden></p>
-  </section>
+    </div>
 
-  <section class="panel">
+    <div id="tab-settings" role="tabpanel" aria-labelledby="tabBtn-settings" hidden>
     <h2>Settings</h2>
     <div class="settings">
       <label for="lowCut">Androgynous starts at (Hz)<input id="lowCut" type="number" min="80" max="300" step="1"></label>
@@ -440,13 +496,17 @@ label.check input { width: auto; accent-color: var(--accent); }
       <label for="dropAlert">Sound when pitch drops<select id="dropAlert"><option value="off">Off</option><option value="chime">Soft chime after 1.5s in masculine range</option></select></label>
       <label for="waterEvery">Water reminder<select id="waterEvery"><option value="5">Every 5 min of speaking</option><option value="10">Every 10 min of speaking</option><option value="15">Every 15 min of speaking</option><option value="0">Off</option></select></label>
     </div>
-  </section>
+    </div>
 
-  <section class="tips">
+    <div id="tab-tips" class="tips" role="tabpanel" aria-labelledby="tabBtn-tips" hidden>
+    <h2>Tips</h2>
     <p><b>How to read it.</b> Typical speaking pitch is about 85–155 Hz for men and 165–255 Hz for women. The default bands treat under 145 Hz as masculine, 145–175 Hz as androgynous, and above 175 Hz as feminine. Many trainers aim for a speaking average around 180–200 Hz. Adjust the bands to match your coach or goals.</p>
     <p><b>Pitch is only half of it.</b> Listeners rely heavily on resonance, the "size" of the space the voice rings in. A brighter, more forward sound reads more feminine even at the same pitch. The brightness meter gives a rough sense of this. Compare it on the same vowel ("ee" or "ah") rather than across different words.</p>
     <p><b>Go easy on your voice.</b> Avoid pushing pitch up with throat tension. Short, frequent sessions work better than long ones. The voice care panel is an estimate from your microphone, not a medical check. Stop if your throat hurts or feels hoarse, and consider a speech-language pathologist who works with gender-affirming voice.</p>
+    </div>
+    </div>
   </section>
+  </main>
 </div>
 
 <!-- PDF tools: the library is downloaded, but the PDF itself is built on your device and never uploaded -->
@@ -1697,6 +1757,30 @@ label.check input { width: auto; accent-color: var(--accent); }
   });
   $("readRestart").addEventListener("click", () => resetReading());
   renderModeUI();
+
+  // ---------- Tools tabs ----------
+  const TABS = ["practice", "report", "discord", "settings", "tips"];
+  function showTab(name) {
+    if (!TABS.includes(name)) name = "practice";
+    for (const t of TABS) {
+      $("tab-" + t).hidden = t !== name;
+      $("tabBtn-" + t).setAttribute("aria-selected", t === name);
+      $("tabBtn-" + t).tabIndex = t === name ? 0 : -1;
+    }
+    store.set("vpt-tab", name);
+    if (name === "report" && sessions.length) drawProgress();   // the chart can't size itself while hidden
+  }
+  TABS.forEach((t, i) => {
+    const b = $("tabBtn-" + t);
+    b.addEventListener("click", () => showTab(t));
+    b.addEventListener("keydown", e => {
+      const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+      if (!step) return;
+      const next = TABS[(i + step + TABS.length) % TABS.length];
+      showTab(next); $("tabBtn-" + next).focus();
+    });
+  });
+  showTab(store.get("vpt-tab", "practice"));
 
   window.addEventListener("resize", () => { drawTrace(); if (sessions.length) drawProgress(); });
   drawTrace();

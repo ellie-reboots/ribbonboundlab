@@ -100,6 +100,16 @@ main.about-pop { max-width: 52rem; width: 100%; text-align: left; }
   border: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
 }
 .hero-logo { width: 96px; height: 96px; border-radius: 22px; flex: none; }
+.trans-hero {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, #5bcefa 30%, transparent),
+    color-mix(in srgb, #f5a9b8 30%, transparent) 50%,
+    color-mix(in srgb, #ffffff 12%, transparent));
+  border-color: color-mix(in srgb, #5bcefa 45%, transparent);
+}
+.about-pop > p { color: var(--muted); }
+.about-pop .goals a, .about-pop .panel a { color: var(--accent); }
+.fact-groups .facts h3 { font-size: .98rem; }
 .hero .hello { margin: 0; font-size: 1rem; }
 .hero h1 { margin: 0; font-size: clamp(2.4rem, 9vw, 3.5rem); line-height: 1.05; }
 .hero .formal { margin: .25rem 0 0; font-size: .9rem; font-style: italic; }
@@ -146,10 +156,17 @@ main.about-pop { max-width: 52rem; width: 100%; text-align: left; }
 .tile strong { color: var(--fg); }
 .tile span:last-child { color: var(--muted); font-size: .9rem; line-height: 1.5; }
 .tile a { color: var(--accent); }
-.facts { margin: 0; padding: 1.25rem 1.5rem; list-style: none; border-radius: 22px;
+.fact-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 1rem; }
+.facts { margin: 0; padding: 1.1rem 1.4rem; border-radius: 22px;
   border: 2px dashed color-mix(in srgb, var(--accent) 40%, transparent); }
-.facts li { padding: .4rem 0; color: var(--muted); line-height: 1.5; }
+.facts h3 { margin: 0 0 .35rem; font-size: 1.05rem; color: var(--fg); }
+.facts ul { margin: 0; padding: 0; list-style: none; }
+.facts li { padding: .4rem 0; color: var(--muted); line-height: 1.5; font-size: .93rem; }
 .facts li + li { border-top: 1px solid color-mix(in srgb, var(--accent) 15%, transparent); }
+.facts em { color: var(--accent); }
+.fact-groups .pop-in:nth-child(2) { animation-delay: .08s; }
+.fact-groups .pop-in:nth-child(3) { animation-delay: .16s; }
+.fact-groups .pop-in:nth-child(4) { animation-delay: .24s; }
 .signoff { margin: 2rem 0 1rem; text-align: center; font-size: 1.1rem; color: var(--fg); }
 .about-pop .tags { justify-content: center; }
 .pop-in { animation: pop-in .6s ease-out both; }

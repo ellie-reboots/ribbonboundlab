@@ -88,6 +88,81 @@ nav a:hover { background: var(--accent); color: var(--bg); }
 .goals { margin: 0 0 .75rem; padding-left: 1.2rem; color: var(--muted); line-height: 1.6; }
 .goals li { margin-bottom: .4rem; }
 
+/* About me page */
+main.about-pop { max-width: 52rem; width: 100%; text-align: left; }
+.hero {
+  position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem;
+  padding: 1.75rem; border-radius: 28px; overflow: hidden;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--accent) 28%, transparent),
+    color-mix(in srgb, #8b7cf6 22%, transparent) 60%,
+    color-mix(in srgb, #4fd1c5 18%, transparent));
+  border: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.hero-logo { width: 96px; height: 96px; border-radius: 22px; flex: none; }
+.hero .hello { margin: 0; font-size: 1rem; }
+.hero h1 { margin: 0; font-size: clamp(2.4rem, 9vw, 3.5rem); line-height: 1.05; }
+.hero .formal { margin: .25rem 0 0; font-size: .9rem; font-style: italic; }
+.shine {
+  background: linear-gradient(90deg, var(--accent), #8b7cf6, #4fd1c5, var(--accent));
+  background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: shine 8s linear infinite;
+}
+@keyframes shine { to { background-position: 300% 0; } }
+.chips { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: .5rem; margin: 0; padding: 0; list-style: none; }
+.chips li {
+  padding: .35em .85em; border-radius: 999px; font-size: .9rem; color: var(--fg);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.panel-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem; margin: 1.5rem 0 0;
+}
+.panel {
+  padding: 1.25rem 1.4rem; border-radius: 22px;
+  border: 2px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  transition: transform .2s, border-color .2s;
+}
+.panel:hover { transform: translateY(-3px); border-color: var(--accent); }
+.panel h2 { margin: 0 0 .5rem; font-size: 1.15rem; display: flex; align-items: center; gap: .5rem; }
+.panel p { margin: 0 0 .6rem; }
+.icon {
+  display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.big-line { font-size: 1.1rem; font-weight: 600; color: var(--fg); }
+.fr { color: var(--accent); font-style: italic; }
+.section-title { margin: 2.25rem 0 1rem; font-size: 1.4rem; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .85rem; }
+.tile {
+  display: flex; flex-direction: column; gap: .35rem; padding: 1.1rem; border-radius: 20px;
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  transition: transform .2s, background .2s;
+}
+.tile:hover { transform: translateY(-3px) rotate(-.5deg); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.tile-icon { font-size: 1.8rem; }
+.tile strong { color: var(--fg); }
+.tile span:last-child { color: var(--muted); font-size: .9rem; line-height: 1.5; }
+.tile a { color: var(--accent); }
+.facts { margin: 0; padding: 1.25rem 1.5rem; list-style: none; border-radius: 22px;
+  border: 2px dashed color-mix(in srgb, var(--accent) 40%, transparent); }
+.facts li { padding: .4rem 0; color: var(--muted); line-height: 1.5; }
+.facts li + li { border-top: 1px solid color-mix(in srgb, var(--accent) 15%, transparent); }
+.signoff { margin: 2rem 0 1rem; text-align: center; font-size: 1.1rem; color: var(--fg); }
+.about-pop .tags { justify-content: center; }
+.pop-in { animation: pop-in .6s ease-out both; }
+.panel-grid .pop-in:nth-child(2), .tiles .pop-in:nth-child(2) { animation-delay: .08s; }
+.panel-grid .pop-in:nth-child(3), .tiles .pop-in:nth-child(3) { animation-delay: .16s; }
+.tiles .pop-in:nth-child(4) { animation-delay: .24s; }
+.tiles .pop-in:nth-child(5) { animation-delay: .32s; }
+@keyframes pop-in { from { opacity: 0; transform: translateY(12px); } }
+@media (prefers-reduced-motion: reduce) {
+  .pop-in, .shine { animation: none; }
+  .panel, .tile { transition: none; }
+}
+
 /* After Dark (18+) page */
 .gate { max-width: 28rem; }
 [hidden] { display: none !important; }
@@ -104,6 +179,14 @@ nav a:hover { background: var(--accent); color: var(--bg); }
   border-top: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
 }
 .about h2.part span { color: var(--accent); }
+.why-kink {
+  margin: 0 0 1.25rem; padding: 1.1rem 1.4rem; border-radius: 0 20px 20px 0;
+  border-left: 4px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.why-kink p:last-child { margin-bottom: 0; }
+.about p a { color: var(--accent); }
+.why-kink strong { color: var(--accent); }
 .adults-only {
   margin: 0 0 1.5rem; padding: 1rem 1.25rem; border-radius: 16px; color: var(--muted);
   background: color-mix(in srgb, #e5484d 12%, transparent);

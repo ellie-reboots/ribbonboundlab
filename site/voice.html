@@ -255,6 +255,28 @@ body { padding-block: 12px; }
   .t-side { max-height: none; }
   .trace-wrap { flex: 1; height: auto; min-height: 120px; }
 }
+/* ---------- Getting started card + guided tour ---------- */
+.welcome { flex: 1; min-height: 0; overflow: auto; display: grid; gap: 12px; align-content: start; }
+.welcome h2 { margin: 0; color: var(--fg); font: 700 1.2rem/1.2 var(--font-display); text-transform: none; letter-spacing: 0; }
+.steps { margin: 0; padding-left: 1.4em; display: grid; gap: 8px; max-width: 75ch; }
+.steps li { padding-left: 4px; color: var(--muted); }
+.steps li::marker { color: var(--accent); font-weight: 700; }
+.steps b { color: var(--fg); }
+.steps em { font-style: normal; color: var(--fg); font-weight: 500; }
+.t-trace.is-idle #traceTitle { display: none; }
+@media (min-width: 1180px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; max-width: none; } }
+@media (max-width: 759px) { .t-trace.is-idle { order: -1; } }
+.tour {
+  position: fixed; z-index: 40; width: min(400px, calc(100vw - 32px));
+  padding: 14px 16px; border-radius: 14px; border: 2px solid var(--accent);
+  background: var(--surface); color: var(--fg); box-shadow: 0 14px 40px rgba(20, 10, 30, .3);
+}
+.tour h3 { margin: 4px 0 4px; }
+.tour p { margin: 0 0 12px; color: var(--muted); }
+.tour-top { display: flex; align-items: center; justify-content: space-between; }
+.tour-step { font: 500 .78rem var(--font-mono); color: var(--accent); }
+.tour .icon-btn { font-size: 1.1rem; padding: 0 10px; }
+.tour-target { outline: 3px solid var(--accent) !important; outline-offset: 3px; position: relative; z-index: 35; }
 /* ---------- Site rail: logo and tabs back to the rest of Ribbon Bound Lab ---------- */
 .rail {
   position: fixed; z-index: 15; top: 0; bottom: 0; left: 0; width: 92px;
@@ -306,11 +328,11 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
       <h1>Voice Pitch Trainer</h1>
       <p class="sub">Live pitch, resonance and voice range. Audio and data stay on your computer.</p>
       <p id="error" class="err" hidden></p>
-      <p id="demoNote" class="sub">Showing a simulated demo voice. Press Start microphone to use your own.</p>
+      <p id="demoNote" class="sub" hidden>Playing a simulated demo voice. Press Start microphone to use your own.</p>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button id="reset">Reset stats</button>
-      <button id="demo">Stop demo</button>
+      <button id="demo" title="Play a simulated voice with a guided tour of the app">Try demo</button>
       <button id="readBtn" title="Read scripts aloud and get pointers as you go">Reading practice</button>
       <button id="pipBtn" title="Small always-on-top window for use during Discord calls">Mini window</button>
       <button id="start" class="primary">Start microphone</button>
@@ -397,10 +419,40 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
     </div>
   </section>
 
-  <section class="panel tile t-trace">
-    <h2>Pitch over the last <span id="secLabel">15</span> seconds</h2>
-    <div class="trace-wrap"><canvas id="trace"></canvas></div>
+  <section class="panel tile t-trace" id="traceTile">
+    <h2 id="traceTitle">Pitch over the last <span id="secLabel">15</span> seconds</h2>
+    <div class="welcome" id="welcome">
+      <h2>Getting started</h2>
+      <ol class="steps">
+        <li><b>Set up.</b> Use headphones in a quiet room, with the mic about an arm's length away (20–30 cm).</li>
+        <li><b>Pick a target.</b> Open <em>Settings</em> and set your target pitch. Many people aim for about 180–200 Hz for a feminine voice or 110–130 Hz for a masculine one. There's no rush.</li>
+        <li><b>Warm up.</b> Press <em>Start microphone</em>, allow access, then hum "mm" and slide gently up and down. The chart follows you.</li>
+        <li><b>Practice.</b> Talk or read aloud and keep the line inside your target band. <em>Reading practice</em> gives you scripts and pointers after each sentence.</li>
+        <li><b>Track it.</b> Record a session in the <em>Practice</em> tab each time. The <em>Report</em> tab turns them into a progress chart, tips and a PDF.</li>
+        <li><b>Be kind to your voice.</b> Short daily sessions of 10–20 minutes work best. If <em>Voice care</em> says Take a break, or your throat hurts, stop and rest.</li>
+      </ol>
+      <div class="row-btns">
+        <button id="wStart" class="primary">Start microphone</button>
+        <button id="wDemo">Take the tour with a demo voice</button>
+        <button id="wRead">Reading practice</button>
+      </div>
+      <p class="sub small">Your audio is analyzed in this browser. It's never recorded or uploaded.</p>
+    </div>
+    <div class="trace-wrap" id="traceWrap" hidden><canvas id="trace"></canvas></div>
   </section>
+
+  <div class="tour" id="tour" role="dialog" aria-labelledby="tourTitle" hidden>
+    <div class="tour-top">
+      <span class="tour-step" id="tourStep">1 of 9</span>
+      <button id="tourEnd" class="icon-btn" aria-label="End the tour">×</button>
+    </div>
+    <h3 id="tourTitle"></h3>
+    <p id="tourText"></p>
+    <div class="row-btns">
+      <button id="tourBack">Back</button>
+      <button id="tourNext" class="primary">Next</button>
+    </div>
+  </div>
 
   <section class="panel tile t-session">
     <h2>This session</h2>
@@ -543,6 +595,7 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
 
     <div id="tab-tips" class="tips" role="tabpanel" aria-labelledby="tabBtn-tips" hidden>
     <h2>Tips</h2>
+    <p><button id="tipsTour">Take the guided tour</button></p>
     <p><b>How to read it.</b> Typical speaking pitch is about 85–155 Hz for men and 165–255 Hz for women. The default bands treat under 145 Hz as masculine, 145–175 Hz as androgynous, and above 175 Hz as feminine. Many trainers aim for a speaking average around 180–200 Hz. Adjust the bands to match your coach or goals.</p>
     <p><b>Pitch is only half of it.</b> Listeners rely heavily on resonance, the "size" of the space the voice rings in. A brighter, more forward sound reads more feminine even at the same pitch. The brightness meter gives a rough sense of this. Compare it on the same vowel ("ee" or "ah") rather than across different words.</p>
     <p><b>Go easy on your voice.</b> Avoid pushing pitch up with throat tension. Short, frequent sessions work better than long ones. The voice care panel is an estimate from your microphone, not a medical check. Stop if your throat hurts or feels hoarse, and consider a speech-language pathologist who works with gender-affirming voice.</p>
@@ -776,17 +829,27 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
     demo = true; running = true; resetCare();
     $("demo").textContent = "Stop demo";
     $("demoNote").hidden = false;
+    setIdle(false);
     lastFrame = performance.now();
     demoTimer = setInterval(() => loop(performance.now()), 33);
   }
   function stopDemo() {
     demo = false; running = false;
     clearInterval(demoTimer);
-    $("demo").textContent = "Play demo";
+    $("demo").textContent = "Try demo";
     $("demoNote").hidden = true;
     showSilence("Press Start and speak or hum");
+    setIdle(true);
   }
-  $("demo").addEventListener("click", () => demo ? stopDemo() : startDemo());
+  $("demo").addEventListener("click", () => { if (demo) { stopDemo(); endTour(); } else { startDemo(); startTour(); } });
+
+  // Idle: show the Getting started card in place of the chart
+  function setIdle(idle) {
+    $("traceTile").classList.toggle("is-idle", idle);
+    $("welcome").hidden = !idle;
+    $("traceWrap").hidden = idle;
+    if (!idle) requestAnimationFrame(() => drawTrace());
+  }
 
   // Simulated speaker: phrases of ~2.5s that drift from a masculine start toward a feminine target, with pauses
   function demoSample(now) {
@@ -818,7 +881,7 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
       mute.gain.value = 0;
       src.connect(tick); tick.connect(mute).connect(ctx.destination);
       tick.onaudioprocess = () => loop(performance.now());
-      running = true; resetCare();
+      running = true; resetCare(); setIdle(false);
       $("start").textContent = "Stop microphone";
       $("start").classList.remove("primary");
       $("note").textContent = "Listening…";
@@ -834,6 +897,7 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
     $("start").textContent = "Start microphone";
     $("start").classList.add("primary");
     showSilence("Microphone off");
+    setIdle(true);
   }
   $("start").addEventListener("click", () => running && !demo ? stop() : start());
   $("reset").addEventListener("click", () => {
@@ -1826,9 +1890,68 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
   showTab(store.get("vpt-tab", "practice"));
 
   window.addEventListener("resize", () => { drawTrace(); if (sessions.length) drawProgress(); });
+  // ---------- Guided tour ----------
+  const TOUR = [
+    [".t-live", "Your pitch", "The big number is your pitch in Hz, with the nearest musical note beside it. The bar shows whether you're in the masculine, androgynous or feminine range."],
+    [".bright-row", "Resonance", "Brightness is a rough guide to resonance, which listeners notice as much as pitch. Brighter and more forward sounds more feminine; darker sounds more masculine. Compare it on the same vowel, like \"ee\"."],
+    [".t-trace", "Pitch chart", "The last few seconds of your voice. Keep the line inside your target band. The dashed line is your target, which you can change in Settings."],
+    [".t-care", "Voice care", "Watches for strain: pushing too high, voice breaks, a rough or breathy sound, and very loud speech. It also reminds you to drink water. If it says Take a break, rest your voice."],
+    [".t-session", "This session", "Your average, lowest and highest pitch since you started, and how much time you spent in each range."],
+    [".t-side", "Practice, reports and settings", "Record a session in Practice after you train. Report turns your sessions into a progress chart, coaching notes and a PDF. Settings holds your target and ranges."],
+    ["#readBtn", "Reading practice", "Read scripts aloud for feminine or masculine training, and get pointers after each sentence."],
+    ["#pipBtn", "Mini window", "A small window that stays on top of other apps, so you can watch your pitch during Discord or video calls."],
+    ["#start", "Your turn", "Put on headphones, press Start microphone and allow access. Begin with a gentle hum, sliding up and down, then talk normally."]
+  ];
+  let tourAt = -1, tourEl = null;
+  function startTour() { $("tour").hidden = false; goTour(0); $("tourNext").focus(); }
+  function endTour() {
+    if (tourEl) tourEl.classList.remove("tour-target");
+    tourEl = null; tourAt = -1; $("tour").hidden = true;
+  }
+  function goTour(i) {
+    if (tourEl) tourEl.classList.remove("tour-target");
+    tourAt = i;
+    const [sel, title, text] = TOUR[i];
+    tourEl = document.querySelector(sel);
+    tourEl.classList.add("tour-target");
+    $("tourStep").textContent = `${i + 1} of ${TOUR.length}`;
+    $("tourTitle").textContent = title; $("tourText").textContent = text;
+    $("tourBack").disabled = i === 0;
+    $("tourNext").textContent = i === TOUR.length - 1 ? "Done" : "Next";
+    if (innerWidth < 760) tourEl.scrollIntoView({ block: "center", behavior: "smooth" });
+    requestAnimationFrame(placeTour);
+  }
+  // Put the card next to the highlighted part without covering it
+  function placeTour() {
+    if (!tourEl) return;
+    const card = $("tour"), r = tourEl.getBoundingClientRect(), cw = card.offsetWidth, ch = card.offsetHeight, m = 12;
+    let top, left;
+    if (innerWidth < 760) { top = innerHeight - ch - m; left = (innerWidth - cw) / 2; }
+    else if (r.height > innerHeight * 0.5 && r.left > cw + 2 * m) { top = r.top + m; left = r.left - cw - m; }
+    else {
+      left = r.left + r.width / 2 - cw / 2;
+      top = r.bottom + m;
+      if (top + ch > innerHeight - m) top = r.top - ch - m;
+      if (top < m) top = r.top + m;
+    }
+    card.style.left = clamp(left, m, innerWidth - cw - m) + "px";
+    card.style.top = clamp(top, m, innerHeight - ch - m) + "px";
+  }
+  $("tourNext").addEventListener("click", () => tourAt < TOUR.length - 1 ? goTour(tourAt + 1) : endTour());
+  $("tourBack").addEventListener("click", () => { if (tourAt > 0) goTour(tourAt - 1); });
+  $("tourEnd").addEventListener("click", endTour);
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && tourAt >= 0) endTour(); });
+  window.addEventListener("resize", () => { if (tourAt >= 0) placeTour(); });
+  window.addEventListener("scroll", () => { if (tourAt >= 0) placeTour(); }, { passive: true });
+
+  $("wStart").addEventListener("click", () => $("start").click());
+  $("wDemo").addEventListener("click", () => { startDemo(); startTour(); });
+  $("wRead").addEventListener("click", () => { if (!$("reader").open) $("readBtn").click(); });
+  $("tipsTour").addEventListener("click", () => { if (!running) startDemo(); startTour(); });
+
   drawTrace();
   renderReport();
-  startDemo();
+  setIdle(true);
 })();
 </script>
 </body>

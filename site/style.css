@@ -118,6 +118,8 @@ main.about-pop { max-width: 52rem; width: 100%; text-align: left; }
 .about-pop .card.rig { text-align: left; }
 .card.rig h2 { margin: 0 0 .25rem; font-size: 1.15rem; display: flex; align-items: center; gap: .5rem; }
 .about-pop > p strong { color: var(--accent); }
+.about-pop > p.joke { font-style: italic; margin-top: -.25rem; }
+.about-pop > p.joke em { color: var(--accent); }
 .about-pop .goals a, .about-pop .panel a { color: var(--accent); }
 .fact-groups .facts h3 { font-size: .98rem; }
 .hero .hello { margin: 0; font-size: 1rem; }

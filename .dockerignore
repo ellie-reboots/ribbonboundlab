@@ -1,3 +1,4 @@
-# Only site/ goes into the image
+# Only site/ and the nginx settings go into the image
 *
 !site/
+!nginx/

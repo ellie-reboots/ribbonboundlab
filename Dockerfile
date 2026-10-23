@@ -2,6 +2,8 @@
 FROM nginxinc/nginx-unprivileged:1.27-alpine
 ARG VERSION=dev
 COPY site/ /usr/share/nginx/html/
+# Our server settings: pages are always rechecked so updates show up right away
+COPY nginx/site.conf /etc/nginx/conf.d/default.conf
 # Stamp the stylesheet link with the build version so Cloudflare's cache
 # always fetches the new style.css after a deploy.
 USER root

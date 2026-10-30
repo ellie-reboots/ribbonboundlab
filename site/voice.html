@@ -160,16 +160,17 @@ td button { padding: 4px 10px; font-size: .8rem; }
 .care-item .k { font-size: .8rem; color: var(--muted); }
 .care-item .v { font: 600 1.3rem var(--font-display); font-variant-numeric: tabular-nums; }
 .care-item .hint { font-size: .75rem; color: var(--muted); }
-.reader {
-  position: fixed; top: auto; left: auto; margin: 0;
-  right: max(16px, env(safe-area-inset-right, 0px)); bottom: max(16px, env(safe-area-inset-bottom, 0px));
-  width: min(460px, calc(100vw - 32px)); max-height: min(82vh, 760px); overflow: auto;
-  padding: 16px; border-radius: 14px; border: 1px solid var(--line);
-  background: var(--surface); color: var(--fg); box-shadow: 0 14px 44px rgba(20, 10, 30, .28); z-index: 20;
+/* Reading practice lives in the big tile, in place of Getting started / the chart */
+.reader { flex: 1; min-height: 0; overflow: auto; display: grid; gap: 16px; align-content: start; }
+.reader-main, .reader-side { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.reader-side h3 { margin: 0 0 8px; }
+@media (min-width: 1180px) {
+  .reader { grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); }
+  .reader-side { position: sticky; top: 0; }
 }
-.reader[open] { display: grid; gap: 12px; }
 .reader-head { display: flex; align-items: center; justify-content: space-between; }
-.reader-head h2 { margin: 0; }
+.reader-head h2 { margin: 0; color: var(--fg); font: 700 1.2rem/1.2 var(--font-display); text-transform: none; letter-spacing: 0; }
+#readBtn[aria-pressed="true"] { background: var(--fem-bg); border-color: var(--accent); color: var(--accent); }
 .icon-btn { padding: 2px 12px; font-size: 1.3rem; line-height: 1.2; }
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); }
 .seg-btn { border: 0; background: transparent; padding: 8px 10px; font-size: .88rem; }
@@ -184,7 +185,7 @@ td button { padding: 4px 10px; font-size: .8rem; }
 .r-cue.good { color: var(--masc); } .reader.fem-mode .r-cue.good { color: var(--fem); }
 .r-cue.near { color: var(--andro); }
 .r-cue.off { color: var(--fg); }
-.script { font: 400 1.12rem/1.85 var(--font-body); padding: 12px 14px; border-radius: 10px; background: var(--bg); max-height: 230px; overflow: auto; }
+.script { font: 400 1.15rem/1.85 var(--font-body); padding: 12px 14px; border-radius: 10px; background: var(--bg); max-height: max(200px, 40vh); overflow: auto; }
 .script .w { border-radius: 4px; padding: 1px 1px; cursor: pointer; }
 .script .w:hover { background: var(--line); }
 .script .w.cur { background: var(--andro-bg); box-shadow: 0 0 0 2px var(--accent); }
@@ -195,7 +196,6 @@ td button { padding: 4px 10px; font-size: .8rem; }
 .pointers .ptag { font: 600 .7rem var(--font-mono); padding: 2px 7px; border-radius: 999px; border: 1px solid currentColor; }
 .pointers .ptag.good { color: var(--masc); } .pointers .ptag.focus { color: var(--andro); } .pointers .ptag.care { color: var(--fem); }
 .pointers li.empty-p { display: block; color: var(--muted); }
-@media (max-width: 520px) { .reader { right: 8px; left: 8px; width: auto; bottom: 8px; max-height: 88vh; } }
 label.check { display: flex; align-items: center; gap: 8px; color: var(--fg); font-size: .9rem; }
 label.check input { width: auto; accent-color: var(--accent); }
 .mini { padding: 10px 12px; display: grid; gap: 8px; }
@@ -255,6 +255,9 @@ body { padding-block: 12px; }
   }
   .t-side { max-height: none; }
   .trace-wrap { flex: 1; height: auto; min-height: 120px; }
+  /* While reading, the reading tile takes the space of Voice care and This session */
+  .tiles.reading { grid-template-areas: "live live side" "trace trace side" "trace trace side"; }
+  .tiles.reading .t-care, .tiles.reading .t-session { display: none; }
 }
 /* ---------- Getting started card + guided tour ---------- */
 .welcome { flex: 1; min-height: 0; overflow: auto; display: grid; gap: 12px; align-content: start; }
@@ -372,43 +375,6 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
     </div>
   </section>
 
-  <dialog id="reader" class="reader" aria-labelledby="readerTitle">
-    <div class="reader-head">
-      <h2 id="readerTitle">Reading practice</h2>
-      <button id="readerClose" class="icon-btn" aria-label="Close reading window">×</button>
-    </div>
-    <div class="seg" role="group" aria-label="Training direction">
-      <button id="modeFem" class="seg-btn" aria-pressed="true">Feminine training</button>
-      <button id="modeMasc" class="seg-btn" aria-pressed="false">Masculine training</button>
-    </div>
-    <div class="reader-row">
-      <label for="scriptSel">Script<select id="scriptSel"></select></label>
-      <label for="readTarget">Target (Hz)<input id="readTarget" type="number" min="70" max="350" step="1"></label>
-    </div>
-    <div id="customBox" class="custom-box" hidden>
-      <label for="customText">Your text
-        <textarea id="customText" rows="4" placeholder="Paste any passage, such as the Rainbow Passage or a reading your voice coach gave you."></textarea>
-      </label>
-      <div class="row-btns"><button id="customUse">Use this text</button><span class="sub small">Saved in this browser only.</span></div>
-    </div>
-    <p class="sub small" id="scriptFocus"></p>
-    <div class="reader-live">
-      <span class="r-hz"><span id="rLiveHz">—</span> Hz</span>
-      <span class="r-cue" id="rLiveCue">Press Start reading, then read aloud</span>
-    </div>
-    <div class="script" id="scriptText"></div>
-    <p class="sub small">Tap a word to jump there if the highlight gets ahead or falls behind. Words take the color of the range you said them in.</p>
-    <label class="check" for="exactWords"><input id="exactWords" type="checkbox"> Exact word tracking</label>
-    <p class="sub small" id="exactNote">Off: the window follows your speaking rhythm and everything stays on this computer. On: uses your browser's speech recognition, which in Chrome and Edge may send audio to Google or Microsoft to recognize the words.</p>
-    <div class="row-btns">
-      <button id="readStart" class="primary">Start reading</button>
-      <button id="readRestart">Start over</button>
-    </div>
-    <div>
-      <h3>Pointers</h3>
-      <ul id="pointers" class="pointers"><li class="empty-p">Pointers appear here after each sentence.</li></ul>
-    </div>
-  </dialog>
 
   <div class="water" id="water" hidden>
     <div><b>Time for a sip of water.</b> <span id="waterWhy">You've been practicing a while.</span></div>
@@ -447,6 +413,48 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
         <button id="wRead">Reading practice</button>
       </div>
       <p class="sub small">Your audio is analyzed in this browser. It's never recorded or uploaded.</p>
+    </div>
+    <div id="reader" class="reader" role="region" aria-labelledby="readerTitle" hidden>
+      <div class="reader-main">
+        <div class="reader-head">
+          <h2 id="readerTitle">Reading practice</h2>
+          <button id="readerClose" class="icon-btn" aria-label="Close reading practice">×</button>
+        </div>
+        <div class="seg" role="group" aria-label="Training direction">
+          <button id="modeFem" class="seg-btn" aria-pressed="true">Feminine training</button>
+          <button id="modeMasc" class="seg-btn" aria-pressed="false">Masculine training</button>
+        </div>
+        <div class="reader-row">
+          <label for="scriptSel">Script<select id="scriptSel"></select></label>
+          <label for="readTarget">Target (Hz)<input id="readTarget" type="number" min="70" max="350" step="1"></label>
+        </div>
+        <div id="customBox" class="custom-box" hidden>
+          <label for="customText">Your text
+            <textarea id="customText" rows="4" placeholder="Paste any passage, such as the Rainbow Passage or a reading your voice coach gave you."></textarea>
+          </label>
+          <div class="row-btns"><button id="customUse">Use this text</button><span class="sub small">Saved in this browser only.</span></div>
+        </div>
+        <p class="sub small" id="scriptFocus"></p>
+        <div class="reader-live">
+          <span class="r-hz"><span id="rLiveHz">—</span> Hz</span>
+          <span class="r-cue" id="rLiveCue">Press Start reading, then read aloud</span>
+        </div>
+        <div class="script" id="scriptText"></div>
+        <div class="row-btns">
+          <button id="readStart" class="primary">Start reading</button>
+          <button id="readRestart">Start over</button>
+          <span class="sub small">Tap a word to jump there if the highlight drifts.</span>
+        </div>
+      </div>
+      <div class="reader-side">
+        <div>
+          <h3>Pointers</h3>
+          <ul id="pointers" class="pointers"><li class="empty-p">Pointers appear here after each sentence.</li></ul>
+        </div>
+        <p class="sub small">Words take the color of the range you said them in: blue masculine, purple androgynous, pink feminine.</p>
+        <label class="check" for="exactWords"><input id="exactWords" type="checkbox"> Exact word tracking</label>
+        <p class="sub small" id="exactNote">Off: the highlight follows your speaking rhythm and everything stays on this computer. On: uses your browser's speech recognition, which in Chrome and Edge may send audio to Google or Microsoft to recognize the words.</p>
+      </div>
     </div>
     <div class="trace-wrap" id="traceWrap" hidden><canvas id="trace"></canvas></div>
   </section>
@@ -637,6 +645,7 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
   const mmss = ms => { const s = Math.max(0, Math.round(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
   const clarityOf = ap => Math.round(clamp(100 * (1 - ap / AP_MAX), 0, 100));
   let pip = null;                       // floating mini window (Document Picture-in-Picture)
+  let tileIdle = true, rdOpen = false;  // what the big tile shows: Getting started, chart or Reading practice
 
   const defaults = { lowCut: 145, highCut: 175, target: 190, window: "15", gate: "0.012", ceiling: 240, waterEvery: "10", dropAlert: "off" };
   let cfg = { ...defaults, ...store.get("vpt-settings", {}) };
@@ -853,12 +862,15 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
   }
   $("demo").addEventListener("click", () => { if (demo) { stopDemo(); endTour(); } else { startDemo(); startTour(); } });
 
-  // Idle: show the Getting started card in place of the chart
-  function setIdle(idle) {
-    $("traceTile").classList.toggle("is-idle", idle);
-    $("welcome").hidden = !idle;
-    $("traceWrap").hidden = idle;
-    if (!idle) requestAnimationFrame(() => drawTrace());
+  // The big tile shows Reading practice when it's open, otherwise Getting started (idle) or the pitch chart
+  function setIdle(idle) { tileIdle = idle; updateTile(); }
+  function updateTile() {
+    $("traceTile").classList.toggle("is-idle", tileIdle || rdOpen);
+    document.querySelector(".tiles").classList.toggle("reading", rdOpen);
+    $("reader").hidden = !rdOpen;
+    $("welcome").hidden = rdOpen || !tileIdle;
+    $("traceWrap").hidden = rdOpen || tileIdle;
+    if (!rdOpen && !tileIdle) requestAnimationFrame(() => drawTrace());
   }
 
   // Simulated speaker: phrases of ~2.5s that drift from a masculine start toward a feminine target, with pauses
@@ -1582,11 +1594,35 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
         "No worries, see you soon!",
         "Could I get a small latte, please?",
         "It was lovely to meet you."] },
-      { title: "Pitch ladder", words: true, focus: "Hum on your target note first, then say each line on that steady, lifted pitch.", text: [
+      { title: "Pitch ladder", group: "Warm-ups", words: true, focus: "Hum on your target note first, then say each line on that steady, lifted pitch.", text: [
         "One, two, three, four, five.",
         "Monday, Tuesday, Wednesday, Thursday, Friday.",
         "Hello, hello, hello, hello.",
-        "Easy, breezy, sunny, cheery."] }
+        "Easy, breezy, sunny, cheery."] },
+      { title: "Introducing yourself", focus: "First impressions. Start bright and friendly, and let your questions lift.", text: [
+        "Hi, my name is Sam, and I'm so glad to meet you.",
+        "I've just moved here from out of town, so everything still feels new.",
+        "I love music, long walks and trying little cafés.",
+        "What about you? Have you lived here long?",
+        "Let's grab a coffee sometime and chat some more!"] },
+      { title: "Feelings: excited, curious, kind", focus: "Emotion lives in melody. Let excitement lift, curiosity rise, and kindness stay soft and warm.", text: [
+        "Oh my gosh, I can't believe it, that's amazing news!",
+        "Wait, really? How did that happen?",
+        "I'm so sorry to hear that. Is there anything I can do?",
+        "Aww, that's the sweetest thing anyone has ever said to me.",
+        "Hmm, I'm not sure. What do you think we should do?"] },
+      { title: "Story time", focus: "Read it like you're telling a story to a child: animated, light and full of melody.", text: [
+        "Once upon a time, a little fox lived at the edge of a quiet forest.",
+        "Every morning she visited the stream to see her friend, a cheerful frog.",
+        "One day the frog was missing, and the fox searched high and low.",
+        "At last she found him singing on a lily pad, proud as could be.",
+        "She laughed so hard that the birds in the trees joined in."] },
+      { title: "Tongue twisters", group: "Warm-ups", words: true, focus: "Warm up your articulation. Go slowly at first, keep it light and forward, then speed up.", text: [
+        "She sells seashells by the seashore.",
+        "Red lorry, yellow lorry, red lorry, yellow lorry.",
+        "Unique New York, unique New York.",
+        "Freshly fried flying fish.",
+        "Eleven benevolent elephants."] }
     ],
     masc: [
       { title: "Steady and grounded", focus: "Open, relaxed vowels. Speak from the chest and keep a steady, level line.", text: [
@@ -1626,11 +1662,35 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
         "No problem, see you later.",
         "Can I get a large black coffee?",
         "Good to meet you."] },
-      { title: "Steady count", words: true, focus: "Keep each line level and let it settle at the end. Don't press down; stay comfortable.", text: [
+      { title: "Steady count", group: "Warm-ups", words: true, focus: "Keep each line level and let it settle at the end. Don't press down; stay comfortable.", text: [
         "One, two, three, four, five.",
         "Monday, Tuesday, Wednesday, Thursday, Friday.",
         "Down, down, down, down, down.",
-        "Hold, roll, slow, low."] }
+        "Hold, roll, slow, low."] },
+      { title: "Introducing yourself", focus: "First impressions. Keep it relaxed and grounded, and let statements settle.", text: [
+        "Hey, I'm Sam. Good to meet you.",
+        "I just moved here, so I'm still learning my way around.",
+        "I'm into music, hiking and fixing up old bikes.",
+        "How about you? Been here long?",
+        "We should grab a coffee sometime."] },
+      { title: "Calm and confident", focus: "Steady and unhurried. Speak from your chest and let each sentence land.", text: [
+        "I've got this.",
+        "Let's go over the plan one more time.",
+        "We'll start with the basics and build from there.",
+        "If anything comes up, I'll handle it.",
+        "Good work today. Get some rest."] },
+      { title: "Story time", focus: "Read like a narrator: calm, low and steady, with endings that fall.", text: [
+        "The old fisherman rowed out before dawn, as he had for forty years.",
+        "The water was calm, and the boat cut a long, dark line across it.",
+        "By noon he had caught nothing, but he didn't mind the wait.",
+        "Just before sunset, the line pulled hard and the rod bent low.",
+        "He brought in the biggest fish of his life, and rowed home grinning."] },
+      { title: "Tongue twisters", group: "Warm-ups", words: true, focus: "Warm up your articulation. Go slowly at first, keep your jaw loose and the sound low, then speed up.", text: [
+        "She sells seashells by the seashore.",
+        "Red lorry, yellow lorry, red lorry, yellow lorry.",
+        "Unique New York, unique New York.",
+        "Freshly fried flying fish.",
+        "Eleven benevolent elephants."] }
     ]
   };
   const rdPrefs = { mode: "fem", mascTarget: 120, exact: false, script: 0, custom: { fem: "", masc: "" }, ...store.get("vpt-reader", {}) };
@@ -1655,8 +1715,11 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
     $("modeFem").setAttribute("aria-pressed", fem); $("modeMasc").setAttribute("aria-pressed", !fem);
     $("reader").classList.toggle("fem-mode", fem);
     const list = SCRIPTS[rdPrefs.mode];
-    $("scriptSel").innerHTML = list.map((s, i) => `<option value="${i}">${esc(s.title)}</option>`).join("") +
-      `<option value="${list.length}">Your own text…</option>`;
+    const groups = {};
+    list.forEach((s, i) => (groups[s.group || (s.words ? "Words and phrases" : "Passages")] ??= []).push(i));
+    $("scriptSel").innerHTML = ["Passages", "Words and phrases", "Warm-ups"].filter(g => groups[g]).map(g =>
+      `<optgroup label="${g}">` + groups[g].map(i => `<option value="${i}">${esc(list[i].title)}</option>`).join("") + `</optgroup>`
+    ).join("") + `<optgroup label="Yours"><option value="${list.length}">Your own text…</option></optgroup>`;
     rdPrefs.script = Math.min(rdPrefs.script, list.length);
     $("scriptSel").value = rdPrefs.script;
     $("readTarget").value = rdTarget();
@@ -1709,7 +1772,7 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
     const el = wordEl(rd.cur);
     if (!el) return;
     el.classList.add("cur");
-    const box = $("scriptText"), top = el.offsetTop - box.offsetTop;
+    const box = $("scriptText"), top = el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
     if (top < box.scrollTop + 10 || top > box.scrollTop + box.clientHeight - 40) box.scrollTop = Math.max(0, top - box.clientHeight / 3);
   }
   function setCue(text, kind) { $("rLiveCue").textContent = text; $("rLiveCue").className = "r-cue " + (kind || ""); }
@@ -1896,13 +1959,15 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
     if (finished) setCue("Finished. See your pointers below.", "");
   }
 
-  $("readBtn").addEventListener("click", () => {
-    const d = $("reader");
-    if (d.open) { d.close(); return; }
-    d.show();
-  });
-  $("readerClose").addEventListener("click", () => $("reader").close());
-  $("reader").addEventListener("close", () => stopReading(false));
+  function openReader(open) {
+    rdOpen = open;
+    if (!open) stopReading(false);
+    $("readBtn").setAttribute("aria-pressed", open);
+    updateTile();
+    if (open && innerWidth < 760) $("traceTile").scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+  $("readBtn").addEventListener("click", () => openReader(!rdOpen));
+  $("readerClose").addEventListener("click", () => openReader(false));
   $("modeFem").addEventListener("click", () => { rdPrefs.mode = "fem"; rdPrefs.script = 0; saveRd(); renderModeUI(); });
   $("modeMasc").addEventListener("click", () => { rdPrefs.mode = "masc"; rdPrefs.script = 0; saveRd(); renderModeUI(); });
   $("scriptSel").addEventListener("change", () => { rdPrefs.script = Number($("scriptSel").value); saveRd(); loadScript(); });
@@ -2021,7 +2086,7 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
 
   $("wStart").addEventListener("click", () => $("start").click());
   $("wDemo").addEventListener("click", () => { startDemo(); startTour(); });
-  $("wRead").addEventListener("click", () => { if (!$("reader").open) $("readBtn").click(); });
+  $("wRead").addEventListener("click", () => openReader(true));
   $("tipsTour").addEventListener("click", () => { if (!running) startDemo(); startTour(); });
 
   drawTrace();

@@ -181,6 +181,9 @@ td button { padding: 4px 10px; font-size: .8rem; }
 .custom-box { display: grid; gap: 8px; }
 .custom-box p, .more-passages { margin: 0; }
 .reader a, .tips a { color: var(--accent); }
+.sources h3 { margin: 16px 0 6px; font-size: .95rem; }
+.sources ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; font-size: .88rem; }
+.sources ul ul { margin-top: 6px; }
 .linklike { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
 .reader-live { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
 .r-hz { font: 700 1.7rem/1 var(--font-display); font-variant-numeric: tabular-nums; }
@@ -500,6 +503,7 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
       <button class="tab" role="tab" id="tabBtn-discord" aria-controls="tab-discord" aria-selected="false">Discord</button>
       <button class="tab" role="tab" id="tabBtn-settings" aria-controls="tab-settings" aria-selected="false">Settings</button>
       <button class="tab" role="tab" id="tabBtn-tips" aria-controls="tab-tips" aria-selected="false">Tips</button>
+      <button class="tab" role="tab" id="tabBtn-sources" aria-controls="tab-sources" aria-selected="false">Sources</button>
     </div>
     <div class="tab-body">
     <div id="tab-practice" role="tabpanel" aria-labelledby="tabBtn-practice">
@@ -623,6 +627,45 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
     <p><b>Pitch is only half of it.</b> Listeners rely heavily on resonance, the "size" of the space the voice rings in. A brighter, more forward sound reads more feminine even at the same pitch. The brightness meter gives a rough sense of this. Compare it on the same vowel ("ee" or "ah") rather than across different words.</p>
     <p><b>More reading material.</b> The University of York collects the standard passages used in speech and voice work, including the Rainbow Passage: <a href="https://www.york.ac.uk/media/languageandlinguistics/documents/currentstudents/linguisticsresources/Standardised-reading.pdf" target="_blank" rel="noopener">standardised reading passages (PDF)</a>. Paste any of them into Reading practice → Your own text.</p>
     <p><b>Go easy on your voice.</b> Avoid pushing pitch up with throat tension. Short, frequent sessions work better than long ones. The voice care panel is an estimate from your microphone, not a medical check. Stop if your throat hurts or feels hoarse, and consider a speech-language pathologist who works with gender-affirming voice.</p>
+    </div>
+
+    <div id="tab-sources" class="tips sources" role="tabpanel" aria-labelledby="tabBtn-sources" hidden>
+    <h2>Sources</h2>
+    <p class="sub small">What this trainer is built on and points to. Nothing on this page quotes third-party text: passages written by others are linked, not copied.</p>
+
+    <h3>Reading passages</h3>
+    <ul>
+      <li><b>Built-in scripts</b> (Bright morning, Phone call, Rainbow walk, word lists, Story time and the rest) were written for this site.</li>
+      <li><b>The North Wind and the Sun</b> is Aesop's fable, which is in the public domain. Our version is told in our own words. The fable is widely used in phonetics and speech research.</li>
+      <li><b>Tongue twisters</b> are traditional English tongue twisters in common use.</li>
+      <li><b>Linked, not copied:</b> <a href="https://www.york.ac.uk/media/languageandlinguistics/documents/currentstudents/linguisticsresources/Standardised-reading.pdf" target="_blank" rel="noopener">standardised reading passages</a> collected by the University of York's Department of Language and Linguistic Science. These include:
+        <ul>
+          <li>The Rainbow Passage: Fairbanks, G. (1960). <i>Voice and Articulation Drillbook</i> (2nd ed.). Harper &amp; Row.</li>
+          <li>The Grandfather Passage: Van Riper, C. (1963). <i>Speech Correction: Principles and Methods</i> (4th ed.). Prentice-Hall.</li>
+          <li>Comma Gets a Cure: Honorof, D. N., McCullough, J., &amp; Somerville, B. (2000).</li>
+        </ul>
+        These belong to their authors. Paste them into Reading practice → Your own text for personal practice.</li>
+    </ul>
+
+    <h3>Voice guidance</h3>
+    <ul>
+      <li>The default ranges (about 85–155 Hz typical for men, 165–255 Hz for women, with a 145–175 Hz androgynous band) are common approximations. Every voice is different, so set your own in Settings.</li>
+      <li>Resonance exercises like "big dog, small dog" and the other practice tips are widely shared in trans voice-training communities. They're suggestions, not clinical instruction.</li>
+      <li>For professional guidance: <a href="https://www.asha.org/practice-portal/professional-issues/gender-affirming-voice-and-communication/" target="_blank" rel="noopener">ASHA Practice Portal: Gender Affirming Voice and Communication</a>, and the <a href="https://wpath.org/publications/soc8/" target="_blank" rel="noopener">WPATH Standards of Care, Version 8</a> (which covers voice and communication).</li>
+    </ul>
+
+    <h3>How it works</h3>
+    <ul>
+      <li>Pitch detection uses the YIN method: de Cheveigné, A., &amp; Kawahara, H. (2002). YIN, a fundamental frequency estimator for speech and music. <i>Journal of the Acoustical Society of America, 111</i>(4), 1917–1930.</li>
+      <li>Brightness, clarity and voice-break readings are this app's own rough estimates, not validated clinical measures.</li>
+    </ul>
+
+    <h3>Software and fonts</h3>
+    <ul>
+      <li><a href="https://github.com/parallax/jsPDF" target="_blank" rel="noopener">jsPDF</a> and <a href="https://github.com/simonbengtsson/jsPDF-AutoTable" target="_blank" rel="noopener">jsPDF-AutoTable</a> (MIT licence) make the PDF reports.</li>
+      <li>Fonts: Bricolage Grotesque, IBM Plex Sans and IBM Plex Mono, served by Google Fonts under the SIL Open Font License.</li>
+    </ul>
+    <p class="sub small">Spotted a missing credit or an error? Let me know and I'll fix it.</p>
     </div>
     </div>
   </section>
@@ -2032,7 +2075,7 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
   renderModeUI();
 
   // ---------- Tools tabs ----------
-  const TABS = ["practice", "report", "discord", "settings", "tips"];
+  const TABS = ["practice", "report", "discord", "settings", "tips", "sources"];
   function showTab(name) {
     if (!TABS.includes(name)) name = "practice";
     for (const t of TABS) {

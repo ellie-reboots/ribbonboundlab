@@ -12,4 +12,4 @@ configMapGenerator:
       - stats.py
 images:
   - name: ghcr.io/ellie-reboots/ribbonboundlab
-    newTag: 122b234eece78bf77f458940ef2fe6446192f13c
+    newTag: f7a67f9d8979ecc6bed0403cc557517f6e9bce92

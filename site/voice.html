@@ -179,6 +179,9 @@ td button { padding: 4px 10px; font-size: .8rem; }
 .reader-row { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 10px; }
 #scriptFocus { margin: -4px 0 0; }
 .custom-box { display: grid; gap: 8px; }
+.custom-box p, .more-passages { margin: 0; }
+.reader a, .tips a { color: var(--accent); }
+.linklike { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
 .reader-live { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
 .r-hz { font: 700 1.7rem/1 var(--font-display); font-variant-numeric: tabular-nums; }
 .r-cue { font-weight: 600; color: var(--muted); }
@@ -432,9 +435,11 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
           <label for="customText">Your text
             <textarea id="customText" rows="4" placeholder="Paste any passage, such as the Rainbow Passage or a reading your voice coach gave you."></textarea>
           </label>
+          <p class="sub small">Looking for the classic passages speech therapists use, like the Rainbow Passage? The University of York has them in one place: <a href="https://www.york.ac.uk/media/languageandlinguistics/documents/currentstudents/linguisticsresources/Standardised-reading.pdf" target="_blank" rel="noopener">standardised reading passages (PDF)</a>. Copy one and paste it above.</p>
           <div class="row-btns"><button id="customUse">Use this text</button><span class="sub small">Saved in this browser only.</span></div>
         </div>
         <p class="sub small" id="scriptFocus"></p>
+        <p class="sub small more-passages">More passages: <a href="https://www.york.ac.uk/media/languageandlinguistics/documents/currentstudents/linguisticsresources/Standardised-reading.pdf" target="_blank" rel="noopener">standard reading passages from the University of York (PDF)</a>. Paste one into <button type="button" class="linklike" id="toOwnText">Your own text</button>.</p>
         <div class="reader-live">
           <span class="r-hz"><span id="rLiveHz">—</span> Hz</span>
           <span class="r-cue" id="rLiveCue">Press Start reading, then read aloud</span>
@@ -616,6 +621,7 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
     <p><button id="tipsTour">Take the guided tour</button></p>
     <p><b>How to read it.</b> Typical speaking pitch is about 85–155 Hz for men and 165–255 Hz for women. The default bands treat under 145 Hz as masculine, 145–175 Hz as androgynous, and above 175 Hz as feminine. Many trainers aim for a speaking average around 180–200 Hz. Adjust the bands to match your coach or goals.</p>
     <p><b>Pitch is only half of it.</b> Listeners rely heavily on resonance, the "size" of the space the voice rings in. A brighter, more forward sound reads more feminine even at the same pitch. The brightness meter gives a rough sense of this. Compare it on the same vowel ("ee" or "ah") rather than across different words.</p>
+    <p><b>More reading material.</b> The University of York collects the standard passages used in speech and voice work, including the Rainbow Passage: <a href="https://www.york.ac.uk/media/languageandlinguistics/documents/currentstudents/linguisticsresources/Standardised-reading.pdf" target="_blank" rel="noopener">standardised reading passages (PDF)</a>. Paste any of them into Reading practice → Your own text.</p>
     <p><b>Go easy on your voice.</b> Avoid pushing pitch up with throat tension. Short, frequent sessions work better than long ones. The voice care panel is an estimate from your microphone, not a medical check. Stop if your throat hurts or feels hoarse, and consider a speech-language pathologist who works with gender-affirming voice.</p>
     </div>
     </div>
@@ -1999,6 +2005,10 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
     if (rdPrefs.exact && !demo) startRecognition();
   });
   $("readRestart").addEventListener("click", () => resetReading());
+  $("toOwnText").addEventListener("click", () => {
+    rdPrefs.script = SCRIPTS[rdPrefs.mode].length; saveRd();
+    $("scriptSel").value = rdPrefs.script; loadScript(); $("customText").focus();
+  });
   $("customUse").addEventListener("click", () => {
     rdPrefs.custom[rdPrefs.mode] = $("customText").value.trim().slice(0, 5000);
     saveRd(); loadScript();

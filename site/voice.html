@@ -177,6 +177,7 @@ td button { padding: 4px 10px; font-size: .8rem; }
 #modeMasc[aria-pressed="true"] { background: var(--masc); }
 .reader-row { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 10px; }
 #scriptFocus { margin: -4px 0 0; }
+.custom-box { display: grid; gap: 8px; }
 .reader-live { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
 .r-hz { font: 700 1.7rem/1 var(--font-display); font-variant-numeric: tabular-nums; }
 .r-cue { font-weight: 600; color: var(--muted); }
@@ -383,6 +384,12 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
     <div class="reader-row">
       <label for="scriptSel">Script<select id="scriptSel"></select></label>
       <label for="readTarget">Target (Hz)<input id="readTarget" type="number" min="70" max="350" step="1"></label>
+    </div>
+    <div id="customBox" class="custom-box" hidden>
+      <label for="customText">Your text
+        <textarea id="customText" rows="4" placeholder="Paste any passage, such as the Rainbow Passage or a reading your voice coach gave you."></textarea>
+      </label>
+      <div class="row-btns"><button id="customUse">Use this text</button><span class="sub small">Saved in this browser only.</span></div>
     </div>
     <p class="sub small" id="scriptFocus"></p>
     <div class="reader-live">
@@ -1555,7 +1562,31 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
         "I was hoping to move it to a little later in the afternoon, if possible.",
         "Any time after three would be perfect for me.",
         "Thank you so much, I really appreciate your help.",
-        "Have a wonderful day!"] }
+        "Have a wonderful day!"] },
+      { title: "Rainbow walk", focus: "A balanced passage with every kind of sound. Read it at your target and keep it bright all the way through.", text: [
+        "After the storm, a rainbow stretched across the valley like a bright painted bridge.",
+        "Every color seemed to shine: red, orange, yellow, green, blue and violet.",
+        "Children ran outside to point at it, and even the busy shopkeepers stopped to look.",
+        "Some people say there's a pot of gold at the end, though no one has ever found it.",
+        "Still, for a few quiet minutes, the whole town shared the same simple joy."] },
+      { title: "Feminine words: bright vowels", words: true, focus: "Small, forward \"ee\" sounds brighten resonance. Smile slightly, keep your tongue forward, and say each word on your target pitch.", text: [
+        "Bee, see, tea, key, free, sweet.",
+        "Leaf, green, dream, clean, peace, keep.",
+        "Me, we, she, three, tree, glee.",
+        "Silly, pretty, lily, city, tiny, easy.",
+        "Feel, meal, real, deal, wheel, heel."] },
+      { title: "Feminine words: everyday phrases", words: true, focus: "Short phrases you say all the time. Keep them light and lifted, with a little melody.", text: [
+        "Hi there! How are you?",
+        "Oh, really? That's so sweet!",
+        "Thank you, I appreciate it.",
+        "No worries, see you soon!",
+        "Could I get a small latte, please?",
+        "It was lovely to meet you."] },
+      { title: "Pitch ladder", words: true, focus: "Hum on your target note first, then say each line on that steady, lifted pitch.", text: [
+        "One, two, three, four, five.",
+        "Monday, Tuesday, Wednesday, Thursday, Friday.",
+        "Hello, hello, hello, hello.",
+        "Easy, breezy, sunny, cheery."] }
     ],
     masc: [
       { title: "Steady and grounded", focus: "Open, relaxed vowels. Speak from the chest and keep a steady, level line.", text: [
@@ -1575,10 +1606,34 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
         "I dropped it off on Monday for a brake check.",
         "Could you tell me when it'll be ready?",
         "Tomorrow works for me. I can come by around four.",
-        "Great. Talk to you then."] }
+        "Great. Talk to you then."] },
+      { title: "Rainbow walk", focus: "A balanced passage with every kind of sound. Keep it settled and level, letting each sentence land.", text: [
+        "After the storm, a rainbow stretched across the valley like a bright painted bridge.",
+        "Every color seemed to shine: red, orange, yellow, green, blue and violet.",
+        "Children ran outside to point at it, and even the busy shopkeepers stopped to look.",
+        "Some people say there's a pot of gold at the end, though no one has ever found it.",
+        "Still, for a few quiet minutes, the whole town shared the same simple joy."] },
+      { title: "Masculine words: open vowels", words: true, focus: "Open, tall vowels darken resonance. Relax your jaw and let the sound sit in your chest.", text: [
+        "Go, low, row, hold, cold, bold.",
+        "Ah, far, car, hard, dark, large.",
+        "Who, do, true, food, mood, room.",
+        "Rock, top, stop, lot, got, job.",
+        "Ground, sound, found, round, down, town."] },
+      { title: "Masculine words: everyday phrases", words: true, focus: "Short phrases you say all the time. Keep them relaxed and level, and let the ends fall.", text: [
+        "Hey, how's it going?",
+        "Yeah, sounds good to me.",
+        "Got it, thanks.",
+        "No problem, see you later.",
+        "Can I get a large black coffee?",
+        "Good to meet you."] },
+      { title: "Steady count", words: true, focus: "Keep each line level and let it settle at the end. Don't press down; stay comfortable.", text: [
+        "One, two, three, four, five.",
+        "Monday, Tuesday, Wednesday, Thursday, Friday.",
+        "Down, down, down, down, down.",
+        "Hold, roll, slow, low."] }
     ]
   };
-  const rdPrefs = { mode: "fem", mascTarget: 120, exact: false, script: 0, ...store.get("vpt-reader", {}) };
+  const rdPrefs = { mode: "fem", mascTarget: 120, exact: false, script: 0, custom: { fem: "", masc: "" }, ...store.get("vpt-reader", {}) };
   const saveRd = () => store.set("vpt-reader", rdPrefs);
   const rd = { on: false, words: [], sents: [], cur: 0, pending: [], syl: 0, points: [], recStart: 0, recog: null };
   const env = { v: 0, max: 0, min: 0, up: true, last: 0, quiet: 0 };
@@ -1599,15 +1654,28 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
     const fem = rdPrefs.mode === "fem";
     $("modeFem").setAttribute("aria-pressed", fem); $("modeMasc").setAttribute("aria-pressed", !fem);
     $("reader").classList.toggle("fem-mode", fem);
-    $("scriptSel").innerHTML = SCRIPTS[rdPrefs.mode].map((s, i) => `<option value="${i}">${esc(s.title)}</option>`).join("");
-    rdPrefs.script = Math.min(rdPrefs.script, SCRIPTS[rdPrefs.mode].length - 1);
+    const list = SCRIPTS[rdPrefs.mode];
+    $("scriptSel").innerHTML = list.map((s, i) => `<option value="${i}">${esc(s.title)}</option>`).join("") +
+      `<option value="${list.length}">Your own text…</option>`;
+    rdPrefs.script = Math.min(rdPrefs.script, list.length);
     $("scriptSel").value = rdPrefs.script;
     $("readTarget").value = rdTarget();
     $("exactWords").checked = rdPrefs.exact;
     loadScript();
   }
+  // Your own text: split into sentences so each one gets its own pointers
+  function customScript() {
+    const raw = (rdPrefs.custom[rdPrefs.mode] || "").replace(/\s+/g, " ").trim();
+    const text = raw ? (raw.match(/[^.!?]+[.!?]*["')\]]*/g) || [raw]).map(s => s.trim()).filter(Boolean)
+      : ["Paste your text above, then press Use this text."];
+    return { title: "Your own text", focus: "Read at a relaxed pace. Each sentence gets its own pointers.", text };
+  }
   function loadScript() {
-    const sc = SCRIPTS[rdPrefs.mode][rdPrefs.script];
+    const custom = rdPrefs.script >= SCRIPTS[rdPrefs.mode].length;
+    const sc = custom ? customScript() : SCRIPTS[rdPrefs.mode][rdPrefs.script];
+    $("customBox").hidden = !custom;
+    if (custom) $("customText").value = rdPrefs.custom[rdPrefs.mode] || "";
+    rd.isWords = !!sc.words;
     $("scriptFocus").textContent = "Focus: " + sc.focus;
     rd.words = []; rd.sents = [];
     let html = "";
@@ -1788,14 +1856,14 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
       if (avg < cfg.lowCut) tips.push(["focus", `Sentence ${si + 1} sat at ${avg} Hz, in the masculine range. Hum "mm" on ${noteName(T)} first and start the first word from there.`]);
       else if (avg < cfg.highCut) tips.push(["focus", `Sentence ${si + 1} was ${avg} Hz, close to the feminine range. Lift the first word a little and hold it there.`]);
       if (s.question && endShift <= 0.5) tips.push(["focus", `"${lastTxt}" ends a question, but your pitch didn't rise. Let the last word lift.`]);
-      else if (!s.question && endShift < -2) tips.push(["focus", `Your pitch dropped on "${lastTxt}". Keep air flowing and hold the last word up.`]);
-      if (range < 3) tips.push(["focus", `That sentence was fairly flat (about ${range} semitones). Give "${key}" a little lift for more melody.`]);
+      else if (!s.question && endShift < -2) tips.push(["focus", rd.isWords ? `Your pitch dropped by "${lastTxt}". Keep every word in the line at the same lifted pitch.` : `Your pitch dropped on "${lastTxt}". Keep air flowing and hold the last word up.`]);
+      if (range < 3 && !rd.isWords) tips.push(["focus", `That sentence was fairly flat (about ${range} semitones). Give "${key}" a little lift for more melody.`]);
       if (bright != null && bright < 0.35) tips.push(["focus", `Resonance sounded dark. Smile slightly and keep vowels small and forward, like "ee".`]);
     } else {
       if (avg < 80) tips.push(["care", `Sentence ${si + 1} went very low (${avg} Hz). Don't press your voice down; that strains it. Find a comfortable floor.`]);
       if (avg >= cfg.highCut) tips.push(["focus", `Sentence ${si + 1} sat at ${avg} Hz, in the feminine range. Relax your throat, like the start of a gentle yawn, and let it settle toward ${T} Hz.`]);
       else if (avg >= cfg.lowCut) tips.push(["focus", `Sentence ${si + 1} was ${avg} Hz, in between. Let it settle a little lower and feel it in your chest.`]);
-      if (!s.question && endShift > 2) tips.push(["focus", `Your pitch rose on "${lastTxt}". For a grounded sound, let statements fall at the end.`]);
+      if (!s.question && endShift > 2) tips.push(["focus", rd.isWords ? `Your pitch crept up by "${lastTxt}". Keep every word in the line settled and level.` : `Your pitch rose on "${lastTxt}". For a grounded sound, let statements fall at the end.`]);
       if (range > 7) tips.push(["focus", `Lots of pitch movement (about ${range} semitones). A steadier line sounds more masculine. Stress words with volume instead of pitch.`]);
       if (bright != null && bright > 0.6) tips.push(["focus", `Resonance sounded bright. Open your throat and use a taller, darker "oh" space.`]);
     }
@@ -1866,6 +1934,10 @@ body { padding-left: calc(92px + max(16px, env(safe-area-inset-left, 0px))); }
     if (rdPrefs.exact && !demo) startRecognition();
   });
   $("readRestart").addEventListener("click", () => resetReading());
+  $("customUse").addEventListener("click", () => {
+    rdPrefs.custom[rdPrefs.mode] = $("customText").value.trim().slice(0, 5000);
+    saveRd(); loadScript();
+  });
   renderModeUI();
 
   // ---------- Tools tabs ----------
